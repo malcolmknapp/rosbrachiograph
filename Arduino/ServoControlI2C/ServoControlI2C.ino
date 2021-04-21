@@ -17,21 +17,21 @@ ros::NodeHandle  nh;
 #define USMIN  600 // This is the rounded 'minimum' microsecond length based on the minimum pulse of 150
 #define USMAX  2400 // This is the rounded 'maximum' microsecond length based on the maximum pulse of 600
 #define SERVO_FREQ 50 // Analog servos run at ~50 Hz updates
-#define BASE_SERVO 0
+#define SHOULDER_SERVO 0
 #define ELBOW_SERVO 1
 #define PEN_SERVO 2
 
 int pen_goal = 300;
 int elbow_goal = 190;
-int base_goal = 190;
+int shoulder_goal = 190;
 int pen_current_pos = 300;
 int elbow_current_pos = 190;
-int base_current_pos = 190;
+int shoulder_current_pos = 190;
 
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
-void base_servo_cb( const std_msgs::UInt16&  cmd_msg){
-  base_goal = cmd_msg.data;  
+void shoulder_servo_cb( const std_msgs::UInt16&  cmd_msg){
+  shoulder_goal = cmd_msg.data;  
   nh.logdebug(cmd_msg.data);
  
 }
@@ -47,7 +47,7 @@ void pen_cb( const std_msgs::UInt16&  cmd_msg){
   nh.logdebug(cmd_msg.data);
 
 }
-ros::Subscriber<std_msgs::UInt16> sub1("base", base_servo_cb);
+ros::Subscriber<std_msgs::UInt16> sub1("shoulder", shoulder_servo_cb);
 ros::Subscriber<std_msgs::UInt16> sub2("elbow", elbow_servo_cb);
 ros::Subscriber<std_msgs::UInt16> sub3("pen", pen_cb);
 
@@ -66,10 +66,10 @@ void setup(){
 }
 
 void loop(){
-  if (abs(base_current_pos - base_goal) > 10) {
-    if (base_goal > base_current_pos) {base_current_pos += 3;}
-    if (base_goal < base_current_pos) {base_current_pos -= 3;}
-    pwm.setPWM(BASE_SERVO, 0, base_current_pos);
+  if (abs(shoulder_current_pos - shoulder_goal) > 10) {
+    if (shoulder_goal > shoulder_current_pos) {shoulder_current_pos += 3;}
+    if (shoulder_goal < shoulder_current_pos) {shoulder_current_pos -= 3;}
+    pwm.setPWM(shoulder_SERVO, 0, shoulder_current_pos);
   }
 
     if (abs(elbow_current_pos - elbow_goal) > 10) {

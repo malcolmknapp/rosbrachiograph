@@ -5,15 +5,17 @@
 # this node accepts JointState which is
 # ---------------
 # would the datastructure look like
-# jointStateObj.name = ["neck_yaw", "neck_tilt"]
+# jointStateObj.name = ["shoulder", "elow", "pen"]
 # jointStateObj.position = [180,0]
 # jointStateObj.velocity# unused
 # jointStateObj.effort#unused
 # ---------------
-# by oran collins
-# github.com/wisehackermonkey
-# oranbusiness@gmail.com
-# 20210307
+# by malcolm knapp
+# github.com/malcolmknap
+# malcolm@mfhkconsulting.com
+# 041421
+# adapted from head_motor_control.py by oran collins
+
 
 
 import rospy
@@ -23,23 +25,27 @@ from std_msgs.msg import UInt16
 from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 
-global yaw_servo
-global tilt_servo
+global shoulder_servo
+global elbow_servo
+global pen_servo
 global sub
-global yaw_servo_position
-global tilt_servo_position
+global shoulder_servo_position
+global elbow_servo_position
+global pen_servo_position
 
 # standard delay between moving the joints
 DELAY = 1.0
 # setting up interger variables
 #     the arduino only accepts integers
-yaw_servo_position = UInt16()
-tilt_servo_position = UInt16()
+shoulder_servo_position = UInt16()
+elbow_servo_position = UInt16()
 
-yaw_min = 0  # in degrees from x to y angles are accepted positions
-yaw_max = 360
-tilt_min = 75
-tilt_max = 115
+shoulder_min = 0  # in degrees from x to y angles are accepted positions
+sholder_max = 360
+elbow_min = 75
+elbow_max = 115
+pen_max = 0
+pen_min = 120
 
 
 # helper function
@@ -58,17 +64,17 @@ def move_servos(msg: JointTrajectoryPoint) -> None:
     print(msg.positions[0])
     print(msg.positions[1])
 
-    yaw_degrees = constrain(math.degrees(msg.positions[0]), yaw_min, yaw_max)
-    tilt_degrees = constrain(math.degrees(msg.positions[1]), tilt_min, tilt_max)
+    shoulder_degrees = constrain(math.degrees(msg.positions[0]), shoulder_min, shoulder_max)
+    elbow_degrees = constrain(math.degrees(msg.positions[1]), elbow_min, elbow_max)
 
-    print("Yaw: ", yaw_degrees, "tilt: ", tilt_degrees)
+    print("shoulder: ", shoulder_degrees, "elbow: ", elbow_degrees)
     # convert float angle radians -pi/2 to pi/2 to integer degrees 0-180
-    yaw_servo_position.data = int(yaw_degrees)
-    tilt_servo_position.data = int(tilt_degrees)
+    shoulder_servo_position.data = int(shoulder_degrees)
+    elbow_servo_position.data = int(elbow_degrees)
 
     # send an int angle to move the servo position to 0-180
-    yaw_servo.publish(yaw_servo_position)
-    tilt_servo.publish(tilt_servo_position)
+    shoulder_servo.publish(shoulder_servo_position)
+    elbow_servo.publish(elbow_servo_position)
 
 
 # im only dulpicating this one betcause i cant think in radians and its a identical function to the one above
@@ -78,17 +84,17 @@ def move_servos_degrees_debug(msg: JointTrajectoryPoint) -> None:
     print(msg.positions[0])
     print(msg.positions[1])
 
-    yaw_degrees = constrain((msg.positions[0]), yaw_min, yaw_max)
-    tilt_degrees = constrain((msg.positions[1]), tilt_min, tilt_max)
+    shoulder_degrees = constrain((msg.positions[0]), shoulder_min, shoulder_max)
+    elbow_degrees = constrain((msg.positions[1]), elbow_min, elbow_max)
 
-    print("Yaw: ", yaw_degrees, "tilt: ", tilt_degrees)
+    print("shoulder: ", shoulder_degrees, "elbow: ", elbow_degrees)
     # convert float angle radians -pi/2 to pi/2 to integer degrees 0-180
-    yaw_servo_position.data = int(yaw_degrees)
-    tilt_servo_position.data = int(tilt_degrees)
+    shoulder_servo_position.data = int(shoulder_degrees)
+    elbow_servo_position.data = int(elbow_degrees)
 
     # send an int angle to move the servo position to 0-180
-    yaw_servo.publish(yaw_servo_position)
-    tilt_servo.publish(tilt_servo_position)
+    shoulder_servo.publish(shoulder_servo_position)
+    elbow_servo.publish(elbow_servo_position)
 
 
 # runs though all the JointTrajectoryPoint's inside a JointTrajectory
@@ -116,8 +122,8 @@ if __name__ == "__main__":
 
     # setup topics to control into arduino servo angles
     # publishing a integer between angle 0-180 /servo1 or /servo2
-    yaw_servo = rospy.Publisher("/head/neck_pan_goal", UInt16, queue_size=1)
-    tilt_servo = rospy.Publisher("/head/neck_tilt_goal", UInt16, queue_size=1)
+    shoulder_servo = rospy.Publisher("shoulder_goal", UInt16, queue_size=1)
+    elbow_servo = rospy.Publisher("elbow_goal", UInt16, queue_size=1)
 
     # waiting for a JointState data on the topic "/move_head"
 
@@ -135,13 +141,13 @@ if __name__ == "__main__":
     # float64[] effort
 
     # rostopic pub /move_head "/{header:{}, name: ['servo1', 'servo2'], position: [0.5, 0.5], velocity:[], effort:[]}""
-    sub = rospy.Subscriber("/head/position_animator", JointTrajectory, process_positions)
-    sub = rospy.Subscriber("/head/position_animator_debug_degrees", JointTrajectory, process_positions_debug_degrees)
+    # sub = rospy.Subscriber("/head/position_animator", JointTrajectory, process_positions)
+    # sub = rospy.Subscriber("/head/position_animator_debug_degrees", JointTrajectory, process_positions_debug_degrees)
 
-    sub = rospy.Subscriber("/head/position_animator/debug_point", JointTrajectoryPoint, move_servos)
-    sub = rospy.Subscriber(
-        "/head/position_animator/debug_point_degrees", JointTrajectoryPoint, move_servos_degrees_debug
-    )
+    # sub = rospy.Subscriber("/head/position_animator/debug_point", JointTrajectoryPoint, move_servos)
+    # sub = rospy.Subscriber(
+    #     "/head/position_animator/debug_point_degrees", JointTrajectoryPoint, move_servos_degrees_debug
+    # )
 
     rate = rospy.Rate(10)
 
