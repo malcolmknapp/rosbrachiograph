@@ -24,6 +24,7 @@ from std_msgs.msg import UInt16
 # from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
+from geometry_msgs.msg import Twist
 
 global shoulder_servo
 global elbow_servo
@@ -40,12 +41,12 @@ DELAY = 1.0
 shoulder_servo_position = UInt16()
 elbow_servo_position = UInt16()
 
-shoulder_min = 0  # in degrees from x to y angles are accepted positions
-sholder_max = 360
-elbow_min = 75
-elbow_max = 115
-pen_max = 0
-pen_min = 120
+shoulder_min = 100  # in degrees from x to y angles are accepted positions
+sholder_max = 400
+elbow_min = 100
+elbow_max = 300
+pen_max = 150
+pen_min = 300
 
 
 # helper function
@@ -97,16 +98,25 @@ def move_servos_degrees_debug(msg: JointTrajectoryPoint) -> None:
     elbow_servo.publish(elbow_servo_position)
 
 
-# runs though all the JointTrajectoryPoint's inside a JointTrajectory
-# which basically runs though an array of angles for each of the joints in this case
-# a joint is a servo motor (and a diamixel motor for the antenna)
-# and waits `DELAY` time before setting the motors to go to the next position
-def process_positions(msg: JointTrajectory) -> None:
-    print(msg)
-    for joint_point in msg.points:
-        print("Here")
-        move_servos(joint_point)
-        rospy.sleep(DELAY)
+# Test for correct message recived
+def jog_position(msg: Twist) -> None:
+    print (msg.angular.z)
+    if msg.angular.z < 0:
+        elbow_servo_position.data = elbow_servo_position.data - 10
+    
+    if msg.angular.z > 0:
+        print ("here")
+        elbow_servo_position.data = elbow_servo_position.data + 10
+    
+    elbow_servo_position.data = int(constrain (elbow_servo_position.data, 100, 300)) 
+    print(elbow_servo_position.data)
+    jog_servo.publish(elbow_servo_position)
+    rospy.sleep(DELAY)
+
+    #for twist_point in msg.points:
+    #   print("Here")
+    #   move_servos(joint_point)
+    
 
 
 def process_positions_debug_degrees(msg: JointTrajectory) -> None:
@@ -118,12 +128,17 @@ def process_positions_debug_degrees(msg: JointTrajectory) -> None:
 
 
 if __name__ == "__main__":
-    rospy.init_node("position_animator_node")
+    rospy.init_node("brachiograph_node")
 
     # setup topics to control into arduino servo angles
-    # publishing a integer between angle 0-180 /servo1 or /servo2
-    shoulder_servo = rospy.Publisher("shoulder_goal", UInt16, queue_size=1)
-    elbow_servo = rospy.Publisher("elbow_goal", UInt16, queue_size=1)
+    # publishing a integer between pulse width 50 - 400 
+    jog_servo = rospy.Publisher("jog_servo", UInt16, queue_size=1)
+    #elbow_servo = rospy.Publisher("elbow_goal", UInt16, queue_size=1)
+    #elbow_servo = rospy.Publisher("pen_goal", UInt16, queue_size=1)
+
+    sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
+
+
 
     # waiting for a JointState data on the topic "/move_head"
 
