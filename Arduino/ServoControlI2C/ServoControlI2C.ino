@@ -8,7 +8,8 @@
 #include <Adafruit_PWMServoDriver.h>
 #include <ros.h>
 
-#include <std_msgs/UInt16.h>
+//#include <std_msgs/UInt16.h>
+#include <rosbrachiograph/Servo.h>
 
 ros::NodeHandle  nh;
 
@@ -30,17 +31,18 @@ int shoulder_current_pos = 190;
 
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
- void jog_cb( const std_msgs::UInt16&  cmd_msg){
-  elbow_goal = cmd_msg.data;  
+ void jog_cb( const rosbrachiograph::Servo&  cmd_msg){
+  elbow_goal = cmd_msg.elbow_pos;  
+  nh.logdebug(cmd_msg.elbow_pos);
+ 
+}
+
+/*
+void command_cb( const std_msgs::UInt16&  cmd_msg){ 
   nh.logdebug(cmd_msg.data);
  
 }
 
-/* void shoulder_servo_cb( const std_msgs::UInt16&  cmd_msg){
-  shoulder_goal = cmd_msg.data;  
-  nh.logdebug(cmd_msg.data);
- 
-}
 
 void elbow_servo_cb( const std_msgs::UInt16&  cmd_msg){
   elbow_goal = cmd_msg.data; 
@@ -54,8 +56,9 @@ void pen_cb( const std_msgs::UInt16&  cmd_msg){
 
 } */
 
-ros::Subscriber<std_msgs::UInt16> sub1("jog_servo", jog_cb);
-//ros::Subscriber<std_msgs::UInt16> sub1("shoulder", shoulder_servo_cb);
+ros::Subscriber<rosbrachiograph::Servo> subjog("jog_servo", jog_cb);
+//ros::Subscriber<std_msgs::UInt16> subcmd("command", command_cb);
+
 //ros::Subscriber<std_msgs::UInt16> sub2("elbow", elbow_servo_cb);
 //ros::Subscriber<std_msgs::UInt16> sub3("pen", pen_cb);
 
@@ -63,8 +66,8 @@ void setup(){
   pinMode(13, OUTPUT);
 
   nh.initNode();
-  nh.subscribe(sub1);
-  // nh.subscribe(sub1);
+  nh.subscribe(subjog);
+  //nh.subscribe(subcmd);
   // nh.subscribe(sub2);
   // nh.subscribe(sub3);
   pwm.begin();
