@@ -9,7 +9,7 @@
 #include <ros.h>
 
 //#include <std_msgs/UInt16.h>
-#include <rosbrachiograph/Servo.h>
+#include <rosbrachiograph/ServoPosition.h>
 
 ros::NodeHandle  nh;
 
@@ -31,7 +31,7 @@ int shoulder_current_pos = 190;
 
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
- void jog_cb( const rosbrachiograph::Servo&  cmd_msg){
+ void jog_cb( const rosbrachiograph::ServoPosition&  cmd_msg){
   elbow_goal = cmd_msg.elbow_pos;  
   nh.logdebug(cmd_msg.elbow_pos);
  
@@ -56,7 +56,7 @@ void pen_cb( const std_msgs::UInt16&  cmd_msg){
 
 } */
 
-ros::Subscriber<rosbrachiograph::Servo> subjog("jog_servo", jog_cb);
+ros::Subscriber<rosbrachiograph::ServoPosition> subjog("jog_servo", jog_cb);
 //ros::Subscriber<std_msgs::UInt16> subcmd("command", command_cb);
 
 //ros::Subscriber<std_msgs::UInt16> sub2("elbow", elbow_servo_cb);
