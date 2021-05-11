@@ -2,21 +2,12 @@
 
 # creates a ros node that controls two servo motors
 # on a arduino running ros serial
-# this node accepts JointState which is
-# ---------------
-# would the datastructure look like
-# jointStateObj.name = ["shoulder", "elow", "pen"]
-# jointStateObj.position = [180,0]
-# jointStateObj.velocity# unused
-# jointStateObj.effort#unused
 # ---------------
 # by malcolm knapp
 # github.com/malcolmknap
 # malcolm@mfhkconsulting.com
 # 041421
 # adapted from head_motor_control.py by oran collins
-
-
 
 import rospy
 import math
@@ -42,7 +33,6 @@ pen_current_pos = 300
 elbow_current_pos = 225
 shoulder_current_pos = 225
 
-
 # standard delay between moving the joints
 DELAY = 1.0
 # setting up interger variables
@@ -51,16 +41,12 @@ shoulder_servo_position = UInt16()
 elbow_servo_position = UInt16()
 jog_msg = ServoPosition ()
 
-
 shoulder_min = 100  # in degrees from x to y angles are accepted positions
 sholder_max = 400
 elbow_min = 100
 elbow_max = 500
 pen_max = 150
 pen_min = 300
-
-
-
 
 # helper function
 # keeps the input number between a high and alow
@@ -92,91 +78,16 @@ def jog_position(msg: Twist) -> None:
     jog_servo.publish(jog_msg)
     rospy.sleep(DELAY)
 
-def move_servos(msg: JointTrajectoryPoint) -> None:
-    print(msg)
-    print(msg.positions[0])
-    print(msg.positions[1])
-
-    shoulder_degrees = constrain(math.degrees(msg.positions[0]), shoulder_min, shoulder_max)
-    elbow_degrees = constrain(math.degrees(msg.positions[1]), elbow_min, elbow_max)
-
-    print("shoulder: ", shoulder_degrees, "elbow: ", elbow_degrees)
-    # convert float angle radians -pi/2 to pi/2 to integer degrees 0-180
-    shoulder_servo_position.data = int(shoulder_degrees)
-    elbow_servo_position.data = int(elbow_degrees)
-
-    # send an int angle to move the servo position to 0-180
-    shoulder_servo.publish(shoulder_servo_position)
-    elbow_servo.publish(elbow_servo_position)
-
-
-# im only dulpicating this one betcause i cant think in radians and its a identical function to the one above
-# exept i dont convert to degrees from radians
-def move_servos_degrees_debug(msg: JointTrajectoryPoint) -> None:
-    print(msg)
-    print(msg.positions[0])
-    print(msg.positions[1])
-
-    shoulder_degrees = constrain((msg.positions[0]), shoulder_min, shoulder_max)
-    elbow_degrees = constrain((msg.positions[1]), elbow_min, elbow_max)
-
-    print("shoulder: ", shoulder_degrees, "elbow: ", elbow_degrees)
-    # convert float angle radians -pi/2 to pi/2 to integer degrees 0-180
-    shoulder_servo_position.data = int(shoulder_degrees)
-    elbow_servo_position.data = int(elbow_degrees)
-
-    # send an int angle to move the servo position to 0-180
-    shoulder_servo.publish(shoulder_servo_position)
-    elbow_servo.publish(elbow_servo_position)
-    
-def process_positions_debug_degrees(msg: JointTrajectory) -> None:
-    print(msg)
-    for joint_point in msg.points:
-        print("Here")
-        move_servos_degrees_debug(joint_point)
-        rospy.sleep(DELAY)
-
 
 if __name__ == "__main__":
     rospy.init_node("brachiograph_node")
 
     jog_size = 20
- 
-
-
-
-    
 
     # setup topics to control into arduino servo angles
     # publishing a integer between pulse width 50 - 400 
     jog_servo = rospy.Publisher("jog_servo", ServoPosition, queue_size=1)
     sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
-
-
-
-    # waiting for a JointState data on the topic "/move_head"
-
-    # example data
-    #  DOCS for joint state
-    # http://wiki.ros.org/joint_state_publisher
-
-    # Data format
-    # http://docs.ros.org/en/api/sensor_msgs/html/msg/JointState.html
-
-    # Header headerx
-    # string[] name  <- optional
-    # float64[] position
-    # float64[] velocity
-    # float64[] effort
-
-    # rostopic pub /move_head "/{header:{}, name: ['servo1', 'servo2'], position: [0.5, 0.5], velocity:[], effort:[]}""
-    # sub = rospy.Subscriber("/head/position_animator", JointTrajectory, process_positions)
-    # sub = rospy.Subscriber("/head/position_animator_debug_degrees", JointTrajectory, process_positions_debug_degrees)
-
-    # sub = rospy.Subscriber("/head/position_animator/debug_point", JointTrajectoryPoint, move_servos)
-    # sub = rospy.Subscriber(
-    #     "/head/position_animator/debug_point_degrees", JointTrajectoryPoint, move_servos_degrees_debug
-    # )
 
     rate = rospy.Rate(10)
 
