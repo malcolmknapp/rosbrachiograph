@@ -8,8 +8,9 @@
 #include <Adafruit_PWMServoDriver.h>
 #include <ros.h>
 
-//#include <std_msgs/UInt16.h>
+
 #include <rosbrachiograph/ServoPosition.h>
+#include <rosbrachiograph/PenPosition.h>
 
 ros::NodeHandle  nh;
 
@@ -31,45 +32,32 @@ int shoulder_current_pos = 190;
 
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
- void jog_cb( const rosbrachiograph::ServoPosition&  cmd_msg){
-  elbow_goal = cmd_msg.elbow_pos;  
-  nh.logdebug(cmd_msg.elbow_pos);
- 
+ void jog_cb( const rosbrachiograph::ServoPosition&  servo_msg){
+  shoulder_goal = servo_msg.shoulder_pos;
+  elbow_goal = servo_msg.elbow_pos;
+
+  nh.logdebug(servo_msg.shoulder_pos);
+  nh.logdebug(servo_msg.elbow_pos);
 }
 
-/*
-void command_cb( const std_msgs::UInt16&  cmd_msg){ 
-  nh.logdebug(cmd_msg.data);
- 
+ void pen_cb( const rosbrachiograph::PenPosition&  pen_msg){
+  pwm.setPWM(PEN_SERVO, 0, pen_msg.pen_pos); //direct control of pen position
+  nh.logdebug(pen_msg.pen_pos);
 }
 
 
-void elbow_servo_cb( const std_msgs::UInt16&  cmd_msg){
-  elbow_goal = cmd_msg.data; 
-  nh.logdebug(cmd_msg.data);
-
-}
-
-void pen_cb( const std_msgs::UInt16&  cmd_msg){
-  pwm.setPWM(PEN_SERVO, 0, cmd_msg.data); //set servo pulse width, should be 160 or 300
-  nh.logdebug(cmd_msg.data);
-
-} */
-
-ros::Subscriber<rosbrachiograph::ServoPosition> subjog("jog_servo", jog_cb);
+ros::Subscriber<rosbrachiograph::ServoPosition> jog("jog_servo", jog_cb);
+ros::Subscriber<rosbrachiograph::PenPosition> pen("jog_pen", pen_cb);
 //ros::Subscriber<std_msgs::UInt16> subcmd("command", command_cb);
 
-//ros::Subscriber<std_msgs::UInt16> sub2("elbow", elbow_servo_cb);
-//ros::Subscriber<std_msgs::UInt16> sub3("pen", pen_cb);
+
 
 void setup(){
   pinMode(13, OUTPUT);
 
   nh.initNode();
-  nh.subscribe(subjog);
-  //nh.subscribe(subcmd);
-  // nh.subscribe(sub2);
-  // nh.subscribe(sub3);
+  nh.subscribe(jog);
+  nh.subscribe(pen);
   pwm.begin();
   pwm.setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates
   Wire.setClock(400000);

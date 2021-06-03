@@ -11,12 +11,13 @@
 
 import rospy
 import math
-from std_msgs.msg import UInt16
+import shlex
+import argparse
 
+from std_msgs.msg import UInt16
+from std_msgs.msg import String
 from rosbrachiograph.msg import ServoPosition
-# from sensor_msgs.msg import JointState
-from trajectory_msgs.msg import JointTrajectory
-from trajectory_msgs.msg import JointTrajectoryPoint
+from rosbrachiograph.msg import PenPosition
 from geometry_msgs.msg import Twist
 
 global shoulder_servo
@@ -40,6 +41,7 @@ DELAY = 1.0
 shoulder_servo_position = UInt16()
 elbow_servo_position = UInt16()
 jog_msg = ServoPosition ()
+pen_msg = PenPosition ()
 
 shoulder_min = 100  # in degrees from x to y angles are accepted positions
 sholder_max = 400
@@ -47,6 +49,8 @@ elbow_min = 100
 elbow_max = 500
 pen_max = 150
 pen_min = 300
+state = "jog_pen"
+
 
 # helper function
 # keeps the input number between a high and alow
@@ -65,29 +69,62 @@ def jog_position(msg: Twist) -> None:
     global pen_current_pos
 
     if msg.angular.z < 0:
-        elbow_current_pos = elbow_current_pos - jog_size
-        
+        if state == "jog_shoulder": shoulder_current_pos = shoulder_current_pos - jog_size
+        if state == "jog_elbow": elbow_current_pos = elbow_current_pos - jog_size
+        if state == "jog_pen": pen_current_pos = pen_current_pos - jog_size
+        rospy.loginfo("state %s", state) 
+
+
     if msg.angular.z > 0:
-        elbow_current_pos = elbow_current_pos + jog_size
+        if state == "jog_shoulder": shoulder_current_pos = shoulder_current_pos + jog_size
+        if state == "jog_elbow": elbow_current_pos = elbow_current_pos + jog_size
+        if state == "jog_pen": pen_current_pos = pen_current_pos + jog_size
     
     jog_msg.shoulder_pos = shoulder_current_pos
     jog_msg.elbow_pos = int(constrain (elbow_current_pos, elbow_min, elbow_max))
-    jog_msg.pen_pos = pen_current_pos
+    pen_msg.pen_pos = pen_current_pos
 
-    rospy.loginfo("Current positions %s", jog_msg) 
+    rospy.loginfo("Current servo positions %s", jog_msg)
+    rospy.loginfo("Current pen positions %s", pen_msg)  
     jog_servo.publish(jog_msg)
+    jog_pen.publish(pen_msg)
     rospy.sleep(DELAY)
 
+def cmd_parse(msg:String) -> None:
+    global state
+    parser = argparse.ArgumentParser (description = "ros brachiograph cli")
+    parser.add_argument("cmd")
+    parser.add_argument("-j", "--jog", action="store_true")
+    parser.add_argument("-s", "--shoulder", action="store_true")
+    parser.add_argument("-e", "--elbow", action="store_true")
+    parser.add_argument("-p", "--pen", action="store_true")
+    parser.add_argument("-h", "--home", action="store_true") 
+    parser.add_argument("-q", "--square", action="store_true") 
+
+    args = parser.parse_args(shlex.split(msg.data))
+    rospy.loginfo(msg.data)  
+
+    if args.cmd == "mode":
+        if args.shoulder:
+            state = "jog_shoulder"
+            rospy.loginfo("joging shoulder")  
+        if args.elbow:
+            state = "jog_elbow"
+            rospy.loginfo("joging elbow")
+        if args.pen:
+            state = "jog_pen"
+            rospy.loginfo("joging pen")
 
 if __name__ == "__main__":
-    rospy.init_node("brachiograph_node")
-
+    rospy.init_node("brachiograph_control_node")
     jog_size = 20
 
     # setup topics to control into arduino servo angles
     # publishing a integer between pulse width 50 - 400 
     jog_servo = rospy.Publisher("jog_servo", ServoPosition, queue_size=1)
+    jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
     sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
+    sub = rospy.Subscriber("/cli", String, cmd_parse)
 
     rate = rospy.Rate(10)
 

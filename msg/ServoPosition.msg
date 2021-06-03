@@ -1,3 +1,2 @@
 uint16 shoulder_pos
 uint16 elbow_pos
-uint16 pen_pos
