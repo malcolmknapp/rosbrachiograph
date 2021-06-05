@@ -41,6 +41,8 @@ class BrachioGraph:
     ):
 
         #ROS setup
+        self.jog_servo = rospy.Publisher("jog_servo", ServoPosition, queue_size=1)
+        self.jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
 
         # set the pantograph geometry
         self.INNER_ARM = inner_arm
@@ -941,11 +943,9 @@ class Pen:
 
 
 
-if __name__ == "__main__":
+""" if __name__ == "__main__":
     rospy.init_node("brachiograph_node")
-    jog_servo = rospy.Publisher("jog_servo", ServoPosition, queue_size=1)
-    jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
 
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
-        rate.sleep()
+        rate.sleep() """

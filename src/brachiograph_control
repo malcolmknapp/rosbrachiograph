@@ -19,6 +19,7 @@ from std_msgs.msg import String
 from rosbrachiograph.msg import ServoPosition
 from rosbrachiograph.msg import PenPosition
 from geometry_msgs.msg import Twist
+import brachiograph
 
 global shoulder_servo
 global elbow_servo
@@ -51,6 +52,33 @@ pen_max = 150
 pen_min = 300
 state = "jog_pen"
 
+#calibration
+servo_1_angle_pws1 = [
+    [-162, 2470],
+    [-144, 2250],
+    [-126, 2050],
+    [-108, 1860],
+    [ -90, 1690],
+    [ -72, 1530],
+    [ -54, 1350],
+    [ -36, 1190],
+    [ -18, 1010],
+    [   0,  840],
+    [  18,  640],
+]
+servo_2_angle_pws2 = [
+    [  0,  660],
+    [ 18,  840],
+    [ 36, 1030],
+    [ 54, 1180],
+    [ 72, 1340],
+    [ 90, 1490],
+    [108, 1640],
+    [126, 1830],
+    [144, 2000],
+    [162, 2200],
+    [180, 2410],
+]
 
 # helper function
 # keeps the input number between a high and alow
@@ -99,7 +127,7 @@ def cmd_parse(msg:String) -> None:
     parser.add_argument("-e", "--elbow", action="store_true")
     parser.add_argument("-p", "--pen", action="store_true")
     parser.add_argument("-h", "--home", action="store_true") 
-    parser.add_argument("-q", "--square", action="store_true") 
+    parser.add_argument("-q", "--square", action="store_true")  
 
     args = parser.parse_args(shlex.split(msg.data))
     rospy.loginfo(msg.data)  
@@ -126,8 +154,23 @@ if __name__ == "__main__":
     sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
     sub = rospy.Subscriber("/cli", String, cmd_parse)
 
-    rate = rospy.Rate(10)
+    bg = BrachioGraph(
+        # the lengths of the arms
+        inner_arm=8,
+        outer_arm=8,
+        # the drawing area
+        bounds=(-8, 4, 8, 13),
+        # angles in degrees and corresponding pulse-widths for the two arm servos
+        servo_1_angle_pws=servo_1_angle_pws1,
+        servo_2_angle_pws=servo_2_angle_pws2,
+        # pulse-widths for pen up/down
+        pw_down=1200,
+        pw_up=1850,
+    )
 
-    print("servo_mover: Running")
+    bg.vertical_lines()
+
+    rate = rospy.Rate(10)
+    print("Control is Running")
     while not rospy.is_shutdown():
         rate.sleep()

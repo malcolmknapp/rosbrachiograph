@@ -1,6 +1,6 @@
 <launch>
     <node name="brachiograph_control_node" pkg="rosbrachiograph" type="brachiograph_control" ></node>
-    <node name="brachiograph_node" pkg="rosbrachiograph" type="brachiograph" ></node>
+    <!-- <node name="brachiograph_node" pkg="rosbrachiograph" type="brachiograph" ></node>-->
     <node name="keyboard_teleop_twist_node" pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" output="screen"></node>
     <!-- setup for serial control of arduino using rosserial_python -->
     <node name="serial_node"        pkg="rosserial_python"      type="serial_node.py">
