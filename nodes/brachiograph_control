@@ -14,12 +14,12 @@ import math
 import shlex
 import argparse
 
-from std_msgs.msg import UInt16
+from brachiograph import BrachioGraph
 from std_msgs.msg import String
 from rosbrachiograph.msg import ServoPosition
 from rosbrachiograph.msg import PenPosition
 from geometry_msgs.msg import Twist
-import brachiograph
+
 
 global shoulder_servo
 global elbow_servo
