@@ -21,8 +21,8 @@ class BrachioGraph:
 
     def __init__(
         self,
-        inner_arm=8,                # the lengths of the arms
-        outer_arm=8,
+        inner_arm=16,                # the lengths of the arms
+        outer_arm=14,
         servo_1_centre=1500,        # shoulder motor centre pulse-width
         servo_2_centre=1500,        # elbow motor centre pulse-width
         servo_1_angle_pws=[],       # pulse-widths for various angles
@@ -507,9 +507,11 @@ class BrachioGraph:
     #  ----------------- hardware-related methods -----------------
      
     def set_pulse_widths(self, pw_1, pw_2):
+        print(pw_1)
+        print(pw_2)
         jog_msg = ServoPosition()
-        jog_msg.shoulder_pos = pw_1
-        jog_msg.elbow_pos = pw_2
+        jog_msg.shoulder_pos = math.floor(pw_1)
+        jog_msg.elbow_pos = math.floor(pw_2)
         self.jog_servo.publish(jog_msg)
         
 

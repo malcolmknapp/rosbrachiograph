@@ -14,12 +14,13 @@ import math
 import shlex
 import argparse
 
-from brachiograph import BrachioGraph
+
 from std_msgs.msg import String
 from rosbrachiograph.msg import ServoPosition
 from rosbrachiograph.msg import PenPosition
 from geometry_msgs.msg import Twist
-
+from rosbrachiograph.brachiograph import BrachioGraph
+from rosbrachiograph.brachiograph import Pen
 
 global shoulder_servo
 global elbow_servo
@@ -39,8 +40,6 @@ shoulder_current_pos = 225
 DELAY = 1.0
 # setting up interger variables
 #     the arduino only accepts integers
-shoulder_servo_position = UInt16()
-elbow_servo_position = UInt16()
 jog_msg = ServoPosition ()
 pen_msg = PenPosition ()
 
@@ -120,14 +119,17 @@ def jog_position(msg: Twist) -> None:
 
 def cmd_parse(msg:String) -> None:
     global state
+    rospy.loginfo("parsing command")
     parser = argparse.ArgumentParser (description = "ros brachiograph cli")
     parser.add_argument("cmd")
     parser.add_argument("-j", "--jog", action="store_true")
     parser.add_argument("-s", "--shoulder", action="store_true")
     parser.add_argument("-e", "--elbow", action="store_true")
     parser.add_argument("-p", "--pen", action="store_true")
-    parser.add_argument("-h", "--home", action="store_true") 
+
+    #parser.add_argument("-h", "--home", action="store_true") 
     parser.add_argument("-q", "--square", action="store_true")  
+    parser.add_argument("-l", "--line", action="store_true")  
 
     args = parser.parse_args(shlex.split(msg.data))
     rospy.loginfo(msg.data)  
@@ -142,6 +144,11 @@ def cmd_parse(msg:String) -> None:
         if args.pen:
             state = "jog_pen"
             rospy.loginfo("joging pen")
+    if args.cmd == "test":
+        if args.line:
+            state = "line"
+            rospy.loginfo("testing line")
+            
 
 if __name__ == "__main__":
     rospy.init_node("brachiograph_control_node")
@@ -168,9 +175,12 @@ if __name__ == "__main__":
         pw_up=1850,
     )
 
-    bg.vertical_lines()
+    
 
     rate = rospy.Rate(10)
     print("Control is Running")
     while not rospy.is_shutdown():
+        if state == "line" :
+            bg.vertical_lines()
+            state = "jog_shoulder"
         rate.sleep()
