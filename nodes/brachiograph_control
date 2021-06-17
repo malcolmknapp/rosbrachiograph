@@ -32,11 +32,6 @@ global pen_servo_position
 global jog_size
 
 
-
-#hard code home position
-
-
-
 #current positins
 pen_current_pos = 150
 elbow_current_pos = 150
@@ -56,6 +51,7 @@ elbow_max = 500
 pen_max = 150
 pen_min = 300
 state = "idle"
+event = ""
 
 #calibration
 servo_1_angle_pws1 = [
@@ -117,6 +113,19 @@ def homing():
     jog_pen.publish(pen_msg)
     rospy.sleep(DELAY)
 
+def move_pen(move="up"):
+    global pen_current_pos
+
+    if move == "up":
+        pen_msg.pen_pos = pen_current_pos = bg.pen.pw_up
+        rospy.loginfo("Move pen up")
+    if move == "down":
+        pen_msg.pen_pos = pen_current_pos = bg.pen.pw_down
+        rospy.loginfo("Move pen down")
+    
+    jog_pen.publish(pen_msg)
+    rospy.sleep(DELAY)
+
 # Test for correct message recived
 def jog_position(msg: Twist) -> None:
     global shoulder_current_pos
@@ -147,6 +156,7 @@ def jog_position(msg: Twist) -> None:
 
 def cmd_parse(msg:String) -> None:
     global state
+    global event
     rospy.loginfo("parsing command")
     parser = argparse.ArgumentParser (description = "ros brachiograph cli")
     parser.add_argument("cmd")
@@ -154,15 +164,27 @@ def cmd_parse(msg:String) -> None:
     parser.add_argument("-s", "--shoulder", action="store_true")
     parser.add_argument("-e", "--elbow", action="store_true")
     parser.add_argument("-p", "--pen", action="store_true")
-    
 
+    parser.add_argument("-u", "--up", action="store_true")
+    parser.add_argument("-d", "--down", action="store_true")
+    
     parser.add_argument("-q", "--square", action="store_true")  
     parser.add_argument("-l", "--line", action="store_true")  
 
     args = parser.parse_args(shlex.split(msg.data))
     rospy.loginfo(msg.data)  
 
-    if args.cmd == "mode":
+    if args.cmd == "home":
+        state = "homing"
+        rospy.loginfo("homing brachiograph")
+    if args.cmd == "pen":
+        if args.up:
+            event = "up"
+            rospy.loginfo("pen up")
+        if args.down:
+            event = "down"
+            rospy.loginfo("pen up")
+    if args.cmd == "jog":
         if args.shoulder:
             state = "jog_shoulder"
             rospy.loginfo("joging shoulder")  
@@ -176,9 +198,7 @@ def cmd_parse(msg:String) -> None:
         if args.line:
             state = "line"
             rospy.loginfo("testing line")
-    if args.cmd == "home":
-            state = "homing"
-            rospy.loginfo("homing brachiograph")
+
             
 
 if __name__ == "__main__":
@@ -192,7 +212,7 @@ if __name__ == "__main__":
     sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
     sub = rospy.Subscriber("/cli", String, cmd_parse)
 
-    test_bounds=(-8, 4, 8, 13)
+    test_bounds=(-2, 2, 2, 2)
     bg = BrachioGraph(
         # the lengths of the arms
         inner_arm=8,
@@ -207,8 +227,8 @@ if __name__ == "__main__":
         # pulse-widths for pen up/down
         hysteresis_correction_1=20,  # hardware error compensation
         hysteresis_correction_2=20,
-        pw_down=260,
-        pw_up=375,
+        pw_down=375,
+        pw_up=260,
     )
 
     rate = rospy.Rate(10)
@@ -220,4 +240,9 @@ if __name__ == "__main__":
         if state == "homing" :
             homing ()
             state = "idle"
+        if state == "idle":
+            if event == "up":
+                move_pen ("up")
+            if event == "down":
+                move_pen ("down")           
         rate.sleep()
