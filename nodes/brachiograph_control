@@ -33,9 +33,9 @@ global jog_size
 
 
 #current positins
-pen_current_pos = 150
-elbow_current_pos = 150
-shoulder_current_pos = 150
+pen_current_pos = 225
+elbow_current_pos = 225
+shoulder_current_pos = 225
 
 # standard delay between moving the joints
 DELAY = 1.0
@@ -52,34 +52,37 @@ pen_max = 150
 pen_min = 300
 state = "idle"
 event = ""
+shoulder_angle = -90
+elbow_angle = 90
 
-#calibration
+
+""" #calibration
 servo_1_angle_pws1 = [
-    [-162, 2470],
-    [-144, 2250],
-    [-126, 2050],
-    [-108, 1860],
-    [ -90, 1690],
-    [ -72, 1530],
-    [ -54, 1350],
-    [ -36, 1190],
-    [ -18, 1010],
-    [   0,  840],
-    [  18,  640],
+    [-162,100],
+    [-144,140],
+    [-126,180],
+    [-108,220],
+    [-90,260],
+    [-72,300],
+    [-54,340],
+    [-36,380],
+    [-18,420],
+    [0,460],
+    [18,500],
 ]
 servo_2_angle_pws2 = [
-    [  0,  660],
-    [ 18,  840],
-    [ 36, 1030],
-    [ 54, 1180],
-    [ 72, 1340],
-    [ 90, 1490],
-    [108, 1640],
-    [126, 1830],
-    [144, 2000],
-    [162, 2200],
-    [180, 2410],
-]
+    [0,100],
+    [18,140],
+    [36,180],
+    [54,220],
+    [72,260],
+    [90,300],
+    [108,340],
+    [126,380],
+    [144,420],
+    [162,460],
+    [180,500],
+] """
 
 # helper function
 # keeps the input number between a high and alow
@@ -157,19 +160,25 @@ def jog_position(msg: Twist) -> None:
 def cmd_parse(msg:String) -> None:
     global state
     global event
+    global shoulder_angle
+    global elbow_angle
     rospy.loginfo("parsing command")
     parser = argparse.ArgumentParser (description = "ros brachiograph cli")
     parser.add_argument("cmd")
-    parser.add_argument("-j", "--jog", action="store_true")
+
+    #jog commands                  
     parser.add_argument("-s", "--shoulder", action="store_true")
     parser.add_argument("-e", "--elbow", action="store_true")
     parser.add_argument("-p", "--pen", action="store_true")
 
+    #manual command
     parser.add_argument("-u", "--up", action="store_true")
     parser.add_argument("-d", "--down", action="store_true")
-    
-    parser.add_argument("-q", "--square", action="store_true")  
-    parser.add_argument("-l", "--line", action="store_true")  
+    parser.add_argument("-a", "--angle",nargs=2,  type=int) 
+
+    #test command 
+    parser.add_argument("-l", "--line", action="store_true")
+    parser.add_argument("-b", "--box", action="store_true")  
 
     args = parser.parse_args(shlex.split(msg.data))
     rospy.loginfo(msg.data)  
@@ -198,6 +207,15 @@ def cmd_parse(msg:String) -> None:
         if args.line:
             state = "line"
             rospy.loginfo("testing line")
+    if args.cmd == "test":
+        if args.angle:
+            state = "angle"
+            shoulder_angle = args.angle[0]
+            elbow_angle = args.angle[1]
+            rospy.loginfo("test go to angle: shoulder {}, elblow {}".format (shoulder_angle,elbow_angle))
+        if args.box:
+            state = "box"
+            rospy.loginfo("test drawing a box")
 
             
 
@@ -212,18 +230,20 @@ if __name__ == "__main__":
     sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
     sub = rospy.Subscriber("/cli", String, cmd_parse)
 
-    test_bounds=(-2, 2, 2, 2)
+    test_bounds=(-2,2, 2, 2)
     bg = BrachioGraph(
         # the lengths of the arms
         inner_arm=8,
         outer_arm=8,
         servo_1_centre=225,        # shoulder motor centre pulse-width
-        servo_2_centre=225,        # elbow motor centre pulse-width
+        servo_2_centre=300,        # elbow motor centre pulse-width
         # the drawing area
         bounds=test_bounds,
         # angles in degrees and corresponding pulse-widths for the two arm servos
-        servo_1_angle_pws=servo_1_angle_pws1,
-        servo_2_angle_pws=servo_2_angle_pws2,
+        #servo_1_angle_pws=servo_1_angle_pws1,
+        #servo_2_angle_pws=servo_2_angle_pws2,
+        servo_1_degree_ms=-2,      # milliseconds pulse-width per degree
+        servo_2_degree_ms=2,       # reversed for the mounting of the elbow servo
         # pulse-widths for pen up/down
         hysteresis_correction_1=20,  # hardware error compensation
         hysteresis_correction_2=20,
@@ -234,15 +254,22 @@ if __name__ == "__main__":
     rate = rospy.Rate(10)
     print("Control is Running")
     while not rospy.is_shutdown():
-        if state == "line" :
-            bg.vertical_lines(test_bounds)
-            state = "idle"
         if state == "homing" :
-            homing ()
+            bg.park ()
             state = "idle"
         if state == "idle":
             if event == "up":
                 move_pen ("up")
             if event == "down":
-                move_pen ("down")           
+                move_pen ("down") 
+        if state == "angle" :
+            bg.set_angles(angle_1=shoulder_angle, angle_2=elbow_angle)
+            state = "idle"          
+        if state == "line" :
+            bg.vertical_lines(bounds = test_bounds, wait = 0.1)
+            state = "idle"
+        if state == "box" :
+            bg.box(bounds = test_bounds, wait = 0.1)
+            state = "idle"
+
         rate.sleep()

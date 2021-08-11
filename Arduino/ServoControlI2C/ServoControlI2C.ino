@@ -78,6 +78,8 @@ void loop(){
     pwm.setPWM(ELBOW_SERVO, 0, elbow_current_pos);
   }
 
+  pwm.setPWM(ELBOW_SERVO, 0, elbow_goal);
+  pwm.setPWM(SHOULDER_SERVO, 0, shoulder_goal);
   nh.spinOnce();
   delay(20);
 }

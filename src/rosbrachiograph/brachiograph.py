@@ -942,12 +942,3 @@ class Pen:
         print("Use these values in your BrachioGraph definition:")
         print()
         print(f"pen_up={self.pw_up}, pen_down={self.pw_down}")
-
-
-
-""" if __name__ == "__main__":
-    rospy.init_node("brachiograph_node")
-
-    rate = rospy.Rate(10)
-    while not rospy.is_shutdown():
-        rate.sleep() """
