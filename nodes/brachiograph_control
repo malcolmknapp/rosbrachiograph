@@ -133,26 +133,31 @@ def move_pen(move="up"):
 def jog_position(msg: Twist) -> None:
     global shoulder_current_pos
     global elbow_current_pos
-    global pen_current_pos
+    #rospy.loginfo("state %s", state) 
+    #rospy.loginfo("teleop msg:\n %s",msg)
 
     if msg.angular.z < 0:
         if state == "jog_shoulder": shoulder_current_pos = shoulder_current_pos - jog_size
-        if state == "jog_elbow": elbow_current_pos = elbow_current_pos - jog_size
-        if state == "jog_pen": pen_current_pos = pen_current_pos - jog_size
-        rospy.loginfo("state %s", state) 
-
-
+        rospy.loginfo("Shoulder -\r")
+        
     if msg.angular.z > 0:
         if state == "jog_shoulder": shoulder_current_pos = shoulder_current_pos + jog_size
-        if state == "jog_elbow": elbow_current_pos = elbow_current_pos + jog_size
-        if state == "jog_pen": pen_current_pos = pen_current_pos + jog_size
+        rospy.loginfo("Shoulder +\r")
+
+    if msg.linear.x < 0:
+        if state == "jog_shoulder": elbow_current_pos = elbow_current_pos - jog_size
+        rospy.loginfo("Elbow -")
+        
+    if msg.linear.x > 0:
+        if state == "jog_shoulder": elbow_current_pos = elbow_current_pos + jog_size
+        rospy.loginfo("Elbow +")
     
     jog_msg.shoulder_pos = shoulder_current_pos
     jog_msg.elbow_pos = elbow_current_pos
     pen_msg.pen_pos = pen_current_pos
 
     rospy.loginfo("Current servo positions %s", jog_msg)
-    rospy.loginfo("Current pen positions %s", pen_msg)  
+    #rospy.loginfo("Current pen positions %s", pen_msg)  
     jog_servo.publish(jog_msg)
     jog_pen.publish(pen_msg)
     rospy.sleep(DELAY)
@@ -174,6 +179,7 @@ def cmd_parse(msg:String) -> None:
     #manual command
     parser.add_argument("-u", "--up", action="store_true")
     parser.add_argument("-d", "--down", action="store_true")
+    parser.add_argument("--done", action="store_true")
     parser.add_argument("-a", "--angle",nargs=2,  type=int) 
 
     #test command 
@@ -203,6 +209,9 @@ def cmd_parse(msg:String) -> None:
         if args.pen:
             state = "jog_pen"
             rospy.loginfo("joging pen")
+        if args.done:
+            state = "idle"
+            rospy.loginfo("done jogging")
     if args.cmd == "test":
         if args.line:
             state = "line"
