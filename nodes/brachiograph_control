@@ -51,7 +51,7 @@ elbow_max = 500
 pen_max = 150
 pen_min = 300
 state = "idle"
-event = ""
+event = "none"
 shoulder_angle = -90
 elbow_angle = 90
 
@@ -268,8 +268,10 @@ if __name__ == "__main__":
         if state == "idle":
             if event == "up":
                 move_pen ("up")
+                event = "none"
             if event == "down":
                 move_pen ("down") 
+                event = "none"
         if state == "angle" :
             bg.set_angles(angle_1=shoulder_angle, angle_2=elbow_angle)
             state = "idle"          
