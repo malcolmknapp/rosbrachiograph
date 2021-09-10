@@ -33,9 +33,9 @@ global jog_size
 
 
 #current positins
-pen_current_pos = 225
-elbow_current_pos = 320
-shoulder_current_pos = 245
+pen_current_pos = 245
+elbow_current_pos = 245
+shoulder_current_pos = 312
 
 # standard delay between moving the joints
 DELAY = 1.0
@@ -139,11 +139,11 @@ def jog_position(msg: Twist) -> None:
     if state == "jog":
         if msg.angular.z < 0:
             shoulder_current_pos = shoulder_current_pos - jog_size
-            rospy.loginfo("Shoulder -\r")
+            rospy.loginfo("Shoulder -")
             
         if msg.angular.z > 0:
             shoulder_current_pos = shoulder_current_pos + jog_size
-            rospy.loginfo("Shoulder +\r")
+            rospy.loginfo("Shoulder +")
 
         if msg.linear.x < 0:
             elbow_current_pos = elbow_current_pos - jog_size
@@ -157,7 +157,12 @@ def jog_position(msg: Twist) -> None:
     jog_msg.elbow_pos = elbow_current_pos
     pen_msg.pen_pos = pen_current_pos
 
+    print ("\n", jog_msg)
+    print ("Current servo sdfds", jog_msg)
     rospy.loginfo("Current servo positions %s", jog_msg)
+    rospy.loginfo("Current servo positions %s", jog_msg)
+    rospy.loginfo("Current servo positions %s", jog_msg)
+    
     #rospy.loginfo("Current pen positions %s", pen_msg)  
     jog_servo.publish(jog_msg)
     jog_pen.publish(pen_msg)
@@ -220,7 +225,7 @@ def cmd_parse(msg:String) -> None:
             state = "angle"
             shoulder_angle = args.angle[0]
             elbow_angle = args.angle[1]
-            rospy.loginfo("test go to angle: shoulder {}, elblow {}".format (shoulder_angle,elbow_angle))
+            rospy.loginfo("test go to angle: shoulder {}, elblow {}\c".format (shoulder_angle,elbow_angle))
         if args.box:
             state = "box"
             rospy.loginfo("test drawing a box")
@@ -236,15 +241,15 @@ if __name__ == "__main__":
     jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
     sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
     sub = rospy.Subscriber("/cli", String, cmd_parse)
-
+    test_bounds = [-8, 8, -6, 6]
     bg = BrachioGraph(
         # the lengths of the arms
         inner_arm=8,
         outer_arm=8,
-        servo_1_centre=225,        # shoulder motor centre pulse-width
-        servo_2_centre=300,        # elbow motor centre pulse-width
+        servo_1_centre=245,        # shoulder motor centre pulse-width
+        servo_2_centre=320,        # elbow motor centre pulse-width
         # the drawing area
-        #bounds=test_bounds,
+        bounds=test_bounds,
         # angles in degrees and corresponding pulse-widths for the two arm servos
         #servo_1_angle_pws=servo_1_angle_pws1,
         #servo_2_angle_pws=servo_2_angle_pws2,
@@ -255,8 +260,10 @@ if __name__ == "__main__":
         # pulse-widths for pen up/down
         hysteresis_correction_1=20,  # hardware error compensation
         hysteresis_correction_2=20,
+        wait=1000,
         pw_down=375,
         pw_up=260,
+        
     )
 
     rate = rospy.Rate(10)

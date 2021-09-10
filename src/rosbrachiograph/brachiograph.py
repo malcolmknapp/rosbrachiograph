@@ -411,7 +411,7 @@ class BrachioGraph:
             self.pen.down()
         else:
             self.pen.up()
-
+        rospy.loginfo("next coordinates: x {}, y {}".format (x,y))
         (angle_1, angle_2) = self.xy_to_angles(x, y)
         (pulse_width_1, pulse_width_2) = self.angles_to_pulse_widths(angle_1, angle_2)
 
@@ -445,9 +445,9 @@ class BrachioGraph:
 
             self.current_x = self.current_x + length_of_step_x
             self.current_y = self.current_y + length_of_step_y
-
+            rospy.loginfo("next coordinates: x {}, y {}".format (self.current_x,self.current_y))
             angle_1, angle_2 = self.xy_to_angles(self.current_x, self.current_y)
-
+            rospy.loginfo("next angle: shoulder {}, elbow {}".format (angle_1,angle_2))
             self.set_angles(angle_1, angle_2)
 
             if step + 1 < no_of_steps:
