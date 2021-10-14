@@ -225,10 +225,10 @@ def cmd_parse(msg:String) -> None:
             state = "angle"
             shoulder_angle = args.angle[0]
             elbow_angle = args.angle[1]
-            rospy.loginfo("test go to angle: shoulder {}, elblow {}\c".format (shoulder_angle,elbow_angle))
+            rospy.loginfo("test go to angle: shoulder {}, elblow {}".format (shoulder_angle,elbow_angle))
         if args.box:
             state = "box"
-            rospy.loginfo("test drawing a box")
+            rospy.loginfo("test drawing a box\n")
 
             
 if __name__ == "__main__":
@@ -283,10 +283,10 @@ if __name__ == "__main__":
             bg.set_angles(angle_1=shoulder_angle, angle_2=elbow_angle)
             state = "idle"          
         if state == "line" :
-            bg.vertical_lines(bounds = test_bounds, wait = 0.1)
+            bg.vertical_lines(bounds = test_bounds, wait = 10, interpolate = 20)
             state = "idle"
         if state == "box" :
-            bg.box(bounds = test_bounds, wait = 0.1)
+            bg.box(bounds = test_bounds, wait = 5, interpolate = 10 )
             state = "idle"
 
         rate.sleep()

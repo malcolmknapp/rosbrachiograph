@@ -13,6 +13,7 @@
 #include <rosbrachiograph/PenPosition.h>
 
 ros::NodeHandle  nh;
+String servo_report;
 
 #define SERVOMIN  150 // This is the 'minimum' pulse length count (out of 4096)
 #define SERVOMAX  600 // This is the 'maximum' pulse length count (out of 4096)
@@ -29,6 +30,10 @@ int elbow_goal = 190;
 int elbow_current_pos = 190;
 int shoulder_goal = 190;
 int shoulder_current_pos = 190;
+
+char shoulder_char [6];
+char elbow_char [6];
+
 
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
@@ -48,8 +53,6 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
 ros::Subscriber<rosbrachiograph::ServoPosition> jog("jog_servo", jog_cb);
 ros::Subscriber<rosbrachiograph::PenPosition> pen("jog_pen", pen_cb);
-//ros::Subscriber<std_msgs::UInt16> subcmd("command", command_cb);
-
 
 
 void setup(){
@@ -69,12 +72,18 @@ void loop(){
   if (abs(shoulder_current_pos - shoulder_goal) > 10) {
     if (shoulder_goal > shoulder_current_pos) {shoulder_current_pos += 3;}
     if (shoulder_goal < shoulder_current_pos) {shoulder_current_pos -= 3;}
+    itoa (shoulder_current_pos,shoulder_char, 10);
+    strcat(shoulder_char, " s");
+    nh.loginfo(shoulder_char);
     pwm.setPWM(SHOULDER_SERVO, 0, shoulder_current_pos);
   }
 
     if (abs(elbow_current_pos - elbow_goal) > 10) {
     if (elbow_goal > elbow_current_pos) {elbow_current_pos += 3;}
     if (elbow_goal < elbow_current_pos) {elbow_current_pos -= 3;}
+    itoa (elbow_current_pos,elbow_char, 10);
+    strcat(elbow_char, " e");
+    nh.loginfo(elbow_char);
     pwm.setPWM(ELBOW_SERVO, 0, elbow_current_pos);
   }
 

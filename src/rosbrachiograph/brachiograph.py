@@ -411,7 +411,7 @@ class BrachioGraph:
             self.pen.down()
         else:
             self.pen.up()
-        rospy.loginfo("next coordinates: x {}, y {}".format (x,y))
+        rospy.loginfo("target coordinates: x {}, y {}".format (x,y))
         (angle_1, angle_2) = self.xy_to_angles(x, y)
         (pulse_width_1, pulse_width_2) = self.angles_to_pulse_widths(angle_1, angle_2)
 
@@ -431,9 +431,9 @@ class BrachioGraph:
         (x_length, y_length) = (x - self.current_x, y - self.current_y)
 
         length = math.sqrt(x_length ** 2 + y_length **2)
-
+        rospy.loginfo("Line length: {} \n".format(length))
         no_of_steps = int(length * interpolate) or 1
-
+        rospy.loginfo("Number of steps: {} \n".format(no_of_steps))
         if no_of_steps < 100:
             disable_tqdm = True
         else:
@@ -445,12 +445,13 @@ class BrachioGraph:
 
             self.current_x = self.current_x + length_of_step_x
             self.current_y = self.current_y + length_of_step_y
-            rospy.loginfo("next coordinates: x {}, y {}".format (self.current_x,self.current_y))
+            rospy.loginfo("next coordinates: x {}, y {}".format (round (self.current_x, 3),round (self.current_y, 3)))
             angle_1, angle_2 = self.xy_to_angles(self.current_x, self.current_y)
-            rospy.loginfo("next angle: shoulder {}, elbow {}".format (angle_1,angle_2))
+            rospy.loginfo("next angle: shoulder {}, elbow {}".format (round (angle_1, 3),round (angle_2, 3)))
             self.set_angles(angle_1, angle_2)
 
             if step + 1 < no_of_steps:
+                #rospy.loginfo("sleep for {} seconds".format (length * wait/no_of_steps))
                 sleep(length * wait/no_of_steps)
 
         sleep(length * wait/10)
