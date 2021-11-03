@@ -386,16 +386,24 @@ class BrachioGraph:
             if not reverse:
 
                 self.draw(bounds[2], bounds[1], wait, interpolate)
+                rospy.loginfo("Segment 1 End")
                 self.draw(bounds[2], bounds[3], wait, interpolate)
+                rospy.loginfo("Segment 2 End")
                 self.draw(bounds[0], bounds[3], wait, interpolate)
+                rospy.loginfo("Segment 3 End")
                 self.draw(bounds[0], bounds[1], wait, interpolate)
+                rospy.loginfo("Segment 4 End")
 
             else:
 
                 self.draw(bounds[0], bounds[3], wait, interpolate)
+                rospy.loginfo("Segment 1 End")
                 self.draw(bounds[2], bounds[3], wait, interpolate)
+                rospy.loginfo("Segment 2 End")
                 self.draw(bounds[2], bounds[1], wait, interpolate)
+                rospy.loginfo("Segment 3 End")
                 self.draw(bounds[0], bounds[1], wait, interpolate)
+                rospy.loginfo("Segment 4 End")
 
         self.park()
 
@@ -413,8 +421,9 @@ class BrachioGraph:
             self.pen.up()
         rospy.loginfo("target coordinates: x {}, y {}".format (x,y))
         (angle_1, angle_2) = self.xy_to_angles(x, y)
-        (pulse_width_1, pulse_width_2) = self.angles_to_pulse_widths(angle_1, angle_2)
-
+        
+        #(pulse_width_1, pulse_width_2) = self.angles_to_pulse_widths(angle_1, angle_2)
+        
         # if they are the same, we don't need to move anything
         """if (pulse_width_1, pulse_width_2) == self.get_pulse_widths():
 
@@ -429,7 +438,6 @@ class BrachioGraph:
 
         # calculate how many steps we need for this move, and the x/y length of each
         (x_length, y_length) = (x - self.current_x, y - self.current_y)
-
         length = math.sqrt(x_length ** 2 + y_length **2)
         rospy.loginfo("Line length: {} \n".format(length))
         no_of_steps = int(length * interpolate) or 1
@@ -445,9 +453,9 @@ class BrachioGraph:
 
             self.current_x = self.current_x + length_of_step_x
             self.current_y = self.current_y + length_of_step_y
-            rospy.loginfo("next coordinates: x {}, y {}".format (round (self.current_x, 3),round (self.current_y, 3)))
+            #rospy.loginfo("next coordinates: x {}, y {}".format (round (self.current_x, 3),round (self.current_y, 3)))
             angle_1, angle_2 = self.xy_to_angles(self.current_x, self.current_y)
-            rospy.loginfo("next angle: shoulder {}, elbow {}".format (round (angle_1, 3),round (angle_2, 3)))
+            #rospy.loginfo("next angle: shoulder {}, elbow {}".format (round (angle_1, 3),round (angle_2, 3)))
             self.set_angles(angle_1, angle_2)
 
             if step + 1 < no_of_steps:
@@ -489,9 +497,13 @@ class BrachioGraph:
     #  ----------------- angles-to-pulse-widths methods -----------------
 
     def naive_angles_to_pulse_widths_1(self, angle):
+        rospy.loginfo("covert shoulder angle: {}".format (angle))
+        rospy.loginfo("to shoulder pulse: {}".format ((angle - self.arm_1_centre) * self.servo_1_degree_ms + self.servo_1_centre))
         return (angle - self.arm_1_centre) * self.servo_1_degree_ms + self.servo_1_centre
 
     def naive_angles_to_pulse_widths_2(self, angle):
+        rospy.loginfo("covert elbow angle: {}".format (angle))
+        rospy.loginfo("to elbow pulse: {}".format ((angle - self.arm_2_centre) * self.servo_2_degree_ms + self.servo_2_centre))
         return (angle - self.arm_2_centre) * self.servo_2_degree_ms + self.servo_2_centre
 
     def angles_to_pulse_widths(self, angle_1, angle_2):
@@ -508,8 +520,8 @@ class BrachioGraph:
     #  ----------------- hardware-related methods -----------------
      
     def set_pulse_widths(self, pw_1, pw_2):
-        print(pw_1)
-        print(pw_2)
+        rospy.loginfo("set shoulder pulse: {}".format (pw_1))
+        rospy.loginfo("set elbow pulse: {}".format (pw_2))
         jog_msg = ServoPosition()
         jog_msg.shoulder_pos = math.floor(pw_1)
         jog_msg.elbow_pos = math.floor(pw_2)

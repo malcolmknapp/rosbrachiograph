@@ -158,10 +158,10 @@ def jog_position(msg: Twist) -> None:
     pen_msg.pen_pos = pen_current_pos
 
     print ("\n", jog_msg)
-    print ("Current servo sdfds", jog_msg)
-    rospy.loginfo("Current servo positions %s", jog_msg)
-    rospy.loginfo("Current servo positions %s", jog_msg)
-    rospy.loginfo("Current servo positions %s", jog_msg)
+    #print ("Current servo sdfds", jog_msg)
+    #rospy.loginfo("Current servo positions %s", jog_msg)
+    #rospy.loginfo("Current servo positions %s", jog_msg)
+    #rospy.loginfo("Current servo positions %s", jog_msg)
     
     #rospy.loginfo("Current pen positions %s", pen_msg)  
     jog_servo.publish(jog_msg)
@@ -254,13 +254,13 @@ if __name__ == "__main__":
         #servo_1_angle_pws=servo_1_angle_pws1,
         #servo_2_angle_pws=servo_2_angle_pws2,
         servo_1_degree_ms=-2,      # milliseconds pulse-width per degree
-        servo_2_degree_ms=2,       # reversed for the mounting of the elbow servo
+        servo_2_degree_ms=5,       # reversed for the mounting of the elbow servo
         arm_1_centre=-90,
         arm_2_centre=94,
         # pulse-widths for pen up/down
-        hysteresis_correction_1=20,  # hardware error compensation
-        hysteresis_correction_2=20,
-        wait=1000,
+        hysteresis_correction_1=0,  # hardware error compensation
+        hysteresis_correction_2=0,
+        wait=10,
         pw_down=375,
         pw_up=260,
         
@@ -286,7 +286,7 @@ if __name__ == "__main__":
             bg.vertical_lines(bounds = test_bounds, wait = 10, interpolate = 20)
             state = "idle"
         if state == "box" :
-            bg.box(bounds = test_bounds, wait = 5, interpolate = 10 )
+            bg.box(bounds = test_bounds, wait = 1, interpolate = 10 )
             state = "idle"
 
         rate.sleep()

@@ -41,8 +41,8 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
   shoulder_goal = servo_msg.shoulder_pos;
   elbow_goal = servo_msg.elbow_pos;
 
-  nh.logdebug(servo_msg.shoulder_pos);
-  nh.logdebug(servo_msg.elbow_pos);
+  //nh.logdebug(servo_msg.shoulder_pos);
+  //nh.logdebug(servo_msg.elbow_pos);
 }
 
  void pen_cb( const rosbrachiograph::PenPosition&  pen_msg){
@@ -69,26 +69,21 @@ void setup(){
 }
 
 void loop(){
-  if (abs(shoulder_current_pos - shoulder_goal) > 10) {
-    if (shoulder_goal > shoulder_current_pos) {shoulder_current_pos += 3;}
-    if (shoulder_goal < shoulder_current_pos) {shoulder_current_pos -= 3;}
-    itoa (shoulder_current_pos,shoulder_char, 10);
-    strcat(shoulder_char, " s");
-    nh.loginfo(shoulder_char);
-    pwm.setPWM(SHOULDER_SERVO, 0, shoulder_current_pos);
+  if (abs(shoulder_current_pos - shoulder_goal) > 1) {
+    //itoa (shoulder_goal,shoulder_char, 10);
+    //strcat(shoulder_char, " s");
+    //nh.loginfo(shoulder_char);
+    pwm.setPWM(SHOULDER_SERVO, 0, shoulder_goal);
+    shoulder_current_pos = shoulder_goal;
   }
 
-    if (abs(elbow_current_pos - elbow_goal) > 10) {
-    if (elbow_goal > elbow_current_pos) {elbow_current_pos += 3;}
-    if (elbow_goal < elbow_current_pos) {elbow_current_pos -= 3;}
-    itoa (elbow_current_pos,elbow_char, 10);
-    strcat(elbow_char, " e");
-    nh.loginfo(elbow_char);
-    pwm.setPWM(ELBOW_SERVO, 0, elbow_current_pos);
+  if (abs(elbow_current_pos - elbow_goal) > 1) {
+    //itoa (elbow_goal,elbow_char, 10);
+    //strcat(elbow_char, " e");
+    //nh.loginfo(elbow_char);
+    pwm.setPWM(ELBOW_SERVO, 0, elbow_goal);
+    elbow_current_pos = elbow_goal;
   }
-
-  pwm.setPWM(ELBOW_SERVO, 0, elbow_goal);
-  pwm.setPWM(SHOULDER_SERVO, 0, shoulder_goal);
   nh.spinOnce();
   delay(20);
 }
