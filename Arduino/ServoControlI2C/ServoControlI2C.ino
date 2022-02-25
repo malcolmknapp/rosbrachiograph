@@ -47,7 +47,7 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
  void pen_cb( const rosbrachiograph::PenPosition&  pen_msg){
   pwm.setPWM(PEN_SERVO, 0, pen_msg.pen_pos); //direct control of pen position
-  nh.logdebug(pen_msg.pen_pos);
+  nh.loginfo(pen_msg.pen_pos);
 }
 
 

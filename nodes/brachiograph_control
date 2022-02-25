@@ -29,7 +29,7 @@ global sub
 global shoulder_servo_position
 global elbow_servo_position
 global pen_servo_position
-global jog_size
+#global jog_size
 
 
 #current positins
@@ -121,51 +121,31 @@ def move_pen(move="up"):
 
     if move == "up":
         pen_msg.pen_pos = pen_current_pos = bg.pen.pw_up
-        rospy.loginfo("Move pen up")
+        rospy.loginfo("Move pen up to {}".format (pen_current_pos))
     if move == "down":
         pen_msg.pen_pos = pen_current_pos = bg.pen.pw_down
-        rospy.loginfo("Move pen down")
+        rospy.loginfo("Move pen down to {}".format (pen_current_pos))
     
     jog_pen.publish(pen_msg)
     rospy.sleep(DELAY)
 
-# Test for correct message recived
+#jog the brachiograph manually
 def jog_position(msg: Twist) -> None:
-    global shoulder_current_pos
-    global elbow_current_pos
-    #rospy.loginfo("state %s", state) 
-    #rospy.loginfo("teleop msg:\n %s",msg)
+    #rospy.loginfo("current x,y:  {},{}".format (round (bg.current_x,3) ,round (bg.current_y,3)))
+    jog_size = .5
+    new_x = -8
+    new_y = 4.2
 
     if state == "jog":
         if msg.angular.z < 0:
-            shoulder_current_pos = shoulder_current_pos - jog_size
-            rospy.loginfo("Shoulder -")
-            
-        if msg.angular.z > 0:
-            shoulder_current_pos = shoulder_current_pos + jog_size
-            rospy.loginfo("Shoulder +")
-
+            new_x = bg.current_x - jog_size
+        if msg.angular.z > 0: 
+            new_x = bg.current_x + jog_size
         if msg.linear.x < 0:
-            elbow_current_pos = elbow_current_pos - jog_size
-            rospy.loginfo("Elbow -")
-            
+            new_y = bg.current_y - jog_size
         if msg.linear.x > 0:
-            elbow_current_pos = elbow_current_pos + jog_size
-            rospy.loginfo("Elbow +")
-        
-    jog_msg.shoulder_pos = shoulder_current_pos
-    jog_msg.elbow_pos = elbow_current_pos
-    pen_msg.pen_pos = pen_current_pos
-
-    print ("\n", jog_msg)
-    #print ("Current servo sdfds", jog_msg)
-    #rospy.loginfo("Current servo positions %s", jog_msg)
-    #rospy.loginfo("Current servo positions %s", jog_msg)
-    #rospy.loginfo("Current servo positions %s", jog_msg)
-    
-    #rospy.loginfo("Current pen positions %s", pen_msg)  
-    jog_servo.publish(jog_msg)
-    jog_pen.publish(pen_msg)
+            new_y = bg.current_y + jog_size
+    bg.xy(new_x, new_y) 
     rospy.sleep(DELAY)
 
 def cmd_parse(msg:String) -> None:
@@ -173,26 +153,25 @@ def cmd_parse(msg:String) -> None:
     global event
     global shoulder_angle
     global elbow_angle
+    global point_x
+    global point_y
+
     rospy.loginfo("parsing command")
     parser = argparse.ArgumentParser (description = "ros brachiograph cli")
     parser.add_argument("cmd")
 
-    #jog commands                  
-    #parser.add_argument("-s", "--shoulder", action="store_true")
-    #parser.add_argument("-e", "--elbow", action="store_true")
-    
-
     #pen command
-    parser.add_argument("-p", "--pen", action="store_true")
     parser.add_argument("-u", "--up", action="store_true")
     parser.add_argument("-d", "--down", action="store_true")
     parser.add_argument("--done", action="store_true")
     
-
     #test command 
     parser.add_argument("-l", "--line", action="store_true")
     parser.add_argument("-b", "--box", action="store_true")
-    parser.add_argument("-a", "--angle",nargs=2,  type=int)   
+    parser.add_argument("-g", "--grid", action="store_true")
+    parser.add_argument("-a", "--angle",nargs=2,  type=int)
+    parser.add_argument("-p", "--point",nargs=2,  type=int) 
+    parser.add_argument("-t", "--pattern", action="store_true")
 
     args = parser.parse_args(shlex.split(msg.data))
     rospy.loginfo(msg.data)  
@@ -207,7 +186,7 @@ def cmd_parse(msg:String) -> None:
             rospy.loginfo("pen up")
         if args.down:
             event = "down"
-            rospy.loginfo("pen up")
+            rospy.loginfo("pen down")
 
     if args.cmd == "jog":
         state = "jog"
@@ -228,8 +207,18 @@ def cmd_parse(msg:String) -> None:
             rospy.loginfo("test go to angle: shoulder {}, elblow {}".format (shoulder_angle,elbow_angle))
         if args.box:
             state = "box"
-            rospy.loginfo("test drawing a box\n")
-
+            rospy.loginfo("test drawing a box")
+        if args.grid:
+            state = "grid"
+            rospy.loginfo("drawing test grid\n")
+        if args.point:
+            state = "point"
+            point_x = args.point[0]
+            point_y = args.point[1]
+            rospy.loginfo("test go to point: x {}, y {}".format (point_x,point_y))
+        if args.pattern:
+            state = "pattern"
+            rospy.loginfo("drawing a test pattern")
             
 if __name__ == "__main__":
     rospy.init_node("brachiograph_control_node")
@@ -241,11 +230,11 @@ if __name__ == "__main__":
     jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
     sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
     sub = rospy.Subscriber("/cli", String, cmd_parse)
-    test_bounds = [-8, 8, -6, 6]
+    test_bounds = [-8, 7, -4, 1]
     bg = BrachioGraph(
         # the lengths of the arms
         inner_arm=8,
-        outer_arm=8,
+        outer_arm=4.2,
         servo_1_centre=245,        # shoulder motor centre pulse-width
         servo_2_centre=320,        # elbow motor centre pulse-width
         # the drawing area
@@ -253,14 +242,14 @@ if __name__ == "__main__":
         # angles in degrees and corresponding pulse-widths for the two arm servos
         #servo_1_angle_pws=servo_1_angle_pws1,
         #servo_2_angle_pws=servo_2_angle_pws2,
-        servo_1_degree_ms=-2,      # milliseconds pulse-width per degree
-        servo_2_degree_ms=5,       # reversed for the mounting of the elbow servo
+        servo_1_degree_ms=-2,      # shoulder servo conversion. milliseconds pulse-width per degree
+        servo_2_degree_ms=2,       # elbow servo conversion. Reversed to compensate for mounting. milliseconds pulse-width per degree
         arm_1_centre=-90,
         arm_2_centre=94,
         # pulse-widths for pen up/down
         hysteresis_correction_1=0,  # hardware error compensation
         hysteresis_correction_2=0,
-        wait=10,
+        wait=1,
         pw_down=375,
         pw_up=260,
         
@@ -285,8 +274,17 @@ if __name__ == "__main__":
         if state == "line" :
             bg.vertical_lines(bounds = test_bounds, wait = 10, interpolate = 20)
             state = "idle"
-        if state == "box" :
+        if state == "box":
             bg.box(bounds = test_bounds, wait = 1, interpolate = 10 )
+            state = "idle"
+        if state == "grid":
+            bg.grid_lines(bounds = test_bounds, wait = 1, interpolate = 10 )
+            state = "idle"
+        if state == "point":
+            bg.xy(x=point_x, y=point_y, wait = 1, interpolate = 10 )
+            state = "idle"
+        if state == "pattern":
+            bg.test_pattern(bounds = test_bounds, wait = 1, interpolate = 10)
             state = "idle"
 
         rate.sleep()

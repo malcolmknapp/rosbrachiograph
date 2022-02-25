@@ -302,14 +302,18 @@ class BrachioGraph:
             return "Plotting a test pattern is only possible when BrachioGraph.bounds is set."
 
         for r in tqdm.tqdm(tqdm.trange(repeat, desc='Iteration'), leave=False):
-
-            for y in range(bounds[1], bounds[3], 2):
-
+            for y in range(bounds[1], bounds[3], -2):
+                #rospy.loginfo("test pattern - y: {}".format(y))
+                #rospy.loginfo("test pattern - move 1")
                 self.xy(bounds[0],   y,     wait, interpolate)
+                #rospy.loginfo("test pattern - draw 1")
                 self.draw(bounds[2], y,     wait, interpolate)
+                #rospy.loginfo("test pattern - move 2")
                 self.xy(bounds[2],   y + 1, wait, interpolate)
+                #rospy.loginfo("test pattern - draw 2")
                 self.draw(bounds[0], y + 1, wait, interpolate)
-
+                
+        rospy.loginfo("test pattern - park")
         self.park()
 
 
@@ -384,26 +388,26 @@ class BrachioGraph:
         for r in tqdm.tqdm(tqdm.trange(repeat), desc='Iteration', leave=False):
 
             if not reverse:
-
+                #rospy.loginfo("second vertex x,y {},{}".format (bounds[2],bounds[1]))
                 self.draw(bounds[2], bounds[1], wait, interpolate)
-                rospy.loginfo("Segment 1 End")
+                
                 self.draw(bounds[2], bounds[3], wait, interpolate)
-                rospy.loginfo("Segment 2 End")
+                #rospy.loginfo("Segment 2 End")
                 self.draw(bounds[0], bounds[3], wait, interpolate)
-                rospy.loginfo("Segment 3 End")
+                #rospy.loginfo("Segment 3 End")
                 self.draw(bounds[0], bounds[1], wait, interpolate)
-                rospy.loginfo("Segment 4 End")
+                #rospy.loginfo("Segment 4 End")
 
             else:
 
                 self.draw(bounds[0], bounds[3], wait, interpolate)
-                rospy.loginfo("Segment 1 End")
+                #rospy.loginfo("Segment 1 End")
                 self.draw(bounds[2], bounds[3], wait, interpolate)
-                rospy.loginfo("Segment 2 End")
+                #rospy.loginfo("Segment 2 End")
                 self.draw(bounds[2], bounds[1], wait, interpolate)
-                rospy.loginfo("Segment 3 End")
+                #rospy.loginfo("Segment 3 End")
                 self.draw(bounds[0], bounds[1], wait, interpolate)
-                rospy.loginfo("Segment 4 End")
+                #rospy.loginfo("Segment 4 End")
 
         self.park()
 
@@ -419,10 +423,11 @@ class BrachioGraph:
             self.pen.down()
         else:
             self.pen.up()
-        rospy.loginfo("target coordinates: x {}, y {}".format (x,y))
+        rospy.loginfo("target coordinates: x {}, y {}".format (round (x,3),round (y,3)))
         (angle_1, angle_2) = self.xy_to_angles(x, y)
-        
-        #(pulse_width_1, pulse_width_2) = self.angles_to_pulse_widths(angle_1, angle_2)
+        rospy.loginfo("target angles: shoulder {}, elbow {}".format (round (angle_1,3),round (angle_2,3)))
+        (pulse_width_1, pulse_width_2) = self.angles_to_pulse_widths(angle_1, angle_2)
+        rospy.loginfo("target pulse widths: shoulder {}, elbow {}".format (round (pulse_width_1,3),round (pulse_width_2,3)))
         
         # if they are the same, we don't need to move anything
         """if (pulse_width_1, pulse_width_2) == self.get_pulse_widths():
@@ -441,7 +446,7 @@ class BrachioGraph:
         length = math.sqrt(x_length ** 2 + y_length **2)
         rospy.loginfo("Line length: {} \n".format(length))
         no_of_steps = int(length * interpolate) or 1
-        rospy.loginfo("Number of steps: {} \n".format(no_of_steps))
+        #rospy.loginfo("Number of steps: {} \n".format(no_of_steps))
         if no_of_steps < 100:
             disable_tqdm = True
         else:
@@ -497,13 +502,13 @@ class BrachioGraph:
     #  ----------------- angles-to-pulse-widths methods -----------------
 
     def naive_angles_to_pulse_widths_1(self, angle):
-        rospy.loginfo("covert shoulder angle: {}".format (angle))
-        rospy.loginfo("to shoulder pulse: {}".format ((angle - self.arm_1_centre) * self.servo_1_degree_ms + self.servo_1_centre))
+        #rospy.loginfo("covert shoulder angle: {}".format (angle))
+        #rospy.loginfo("to shoulder pulse: {}".format ((angle - self.arm_1_centre) * self.servo_1_degree_ms + self.servo_1_centre))
         return (angle - self.arm_1_centre) * self.servo_1_degree_ms + self.servo_1_centre
 
     def naive_angles_to_pulse_widths_2(self, angle):
-        rospy.loginfo("covert elbow angle: {}".format (angle))
-        rospy.loginfo("to elbow pulse: {}".format ((angle - self.arm_2_centre) * self.servo_2_degree_ms + self.servo_2_centre))
+        #rospy.loginfo("covert elbow angle: {}".format (angle))
+        #rospy.loginfo("to elbow pulse: {}".format ((angle - self.arm_2_centre) * self.servo_2_degree_ms + self.servo_2_centre))
         return (angle - self.arm_2_centre) * self.servo_2_degree_ms + self.servo_2_centre
 
     def angles_to_pulse_widths(self, angle_1, angle_2):
@@ -520,8 +525,8 @@ class BrachioGraph:
     #  ----------------- hardware-related methods -----------------
      
     def set_pulse_widths(self, pw_1, pw_2):
-        rospy.loginfo("set shoulder pulse: {}".format (pw_1))
-        rospy.loginfo("set elbow pulse: {}".format (pw_2))
+        #rospy.loginfo("set shoulder pulse: {}".format (pw_1))
+        #rospy.loginfo("set elbow pulse: {}".format (pw_2))
         jog_msg = ServoPosition()
         jog_msg.shoulder_pos = math.floor(pw_1)
         jog_msg.elbow_pos = math.floor(pw_2)
@@ -550,8 +555,8 @@ class BrachioGraph:
         pen_msg.pen_pos = 0
         # stop sending pulses to the servos
         rospy.loginfo("Quiet Servos") 
-        jog_servo.publish(jog_msg)
-        jog_pen.publish(pen_msg)
+        self.jog_servo.publish(jog_msg)
+        self.jog_pen.publish(pen_msg)
 
 
     # ----------------- trigonometric methods -----------------
@@ -569,7 +574,7 @@ class BrachioGraph:
         hypotenuse = math.sqrt(x**2+y**2)
 
         if hypotenuse > self.INNER_ARM + self.OUTER_ARM:
-            raise Exception(f"Cannot reach {hypotenuse}; total arm length is {self.INNER_ARM + self.OUTER_ARM}")
+            raise Exception(f"Cannot reach {hypotenuse}; total arm length is: {self.INNER_ARM} + {self.OUTER_ARM}")
 
         hypotenuse_angle = math.asin(x/hypotenuse)
 
@@ -869,7 +874,6 @@ class Pen:
         self.pw_up = pw_up
         self.pw_down = pw_down
         self.transition_time = transition_time
-    
 
         self.up()
         sleep(0.3)
@@ -892,7 +896,7 @@ class Pen:
     # for convenience, a quick way to set pen motor pulse-widths
     def pw(self, pulse_width):
             rospy.loginfo("Current positions %s", jog_msg) 
-            jog_pen.publish(pen_msg)    
+            self.jog_pen.publish(pen_msg)    
             
 
 
