@@ -131,20 +131,47 @@ def move_pen(move="up"):
 #jog the brachiograph manually
 def jog_position(msg: Twist) -> None:
     #rospy.loginfo("current x,y:  {},{}".format (round (bg.current_x,3) ,round (bg.current_y,3)))
-    jog_size = .5
+    jog_size_xy = .5
+    jog_size_pw = 10
     new_x = -8
     new_y = 4.2
 
-    if state == "jog":
+    if state == "jog_xy":
         if msg.angular.z < 0:
-            new_x = bg.current_x - jog_size
+            new_x = bg.current_x - jog_size_xy
         if msg.angular.z > 0: 
-            new_x = bg.current_x + jog_size
+            new_x = bg.current_x + jog_size_xy
         if msg.linear.x < 0:
-            new_y = bg.current_y - jog_size
+            new_y = bg.current_y - jog_size_xy
         if msg.linear.x > 0:
-            new_y = bg.current_y + jog_size
+            new_y = bg.current_y + jog_size_xy
         bg.xy(new_x, new_y) 
+        rospy.sleep(DELAY)
+
+    if state == "jog_pw":
+        global shoulder_current_pos
+        global elbow_current_pos
+        #rospy.loginfo("state %s", state) 
+        rospy.loginfo("teleop msg:\n %s",msg)
+
+        if msg.angular.z < 0:
+            shoulder_current_pos = shoulder_current_pos - jog_size_pw
+            #rospy.loginfo("Shoulder -\r")
+        if msg.angular.z > 0:
+            shoulder_current_pos = shoulder_current_pos + jog_size_pw
+            #rospy.loginfo("Shoulder +\r")
+        if msg.linear.x < 0:
+            elbow_current_pos = elbow_current_pos - jog_size_pw
+            #rospy.loginfo("Elbow -")
+        if msg.linear.x > 0:
+            elbow_current_pos = elbow_current_pos + jog_size_pw
+            #rospy.loginfo("Elbow +")
+        
+        jog_msg.shoulder_pos = shoulder_current_pos
+        jog_msg.elbow_pos = elbow_current_pos
+
+        rospy.loginfo("Current servo positions %s", jog_msg)
+        jog_servo.publish(jog_msg)
         rospy.sleep(DELAY)
 
 def cmd_parse(msg:String) -> None:
@@ -187,13 +214,21 @@ def cmd_parse(msg:String) -> None:
             event = "down"
             rospy.loginfo("pen down")
 
-    if args.cmd == "jog":
-        state = "jog"
+    if args.cmd == "jog_xy":
+        state = "jog_xy"
         if args.done:
             state = "idle"
             rospy.loginfo("done jogging")
         else:
-            rospy.loginfo(" Now jogging")
+            rospy.loginfo(" Now jogging xy")
+    if args.cmd == "jog_pw":
+        state = "jog_pw"
+        if args.done:
+            state = "idle"
+            rospy.loginfo("done jogging")
+        else:
+            rospy.loginfo(" Now jogging pw")
+
     if args.cmd == "test":
         if args.line:
             state = "line"
@@ -221,7 +256,6 @@ def cmd_parse(msg:String) -> None:
             
 if __name__ == "__main__":
     rospy.init_node("brachiograph_control_node")
-    jog_size = 10
 
     # setup topics to control into arduino servo angles
     # publishing a integer between pulse width 50 - 400 
