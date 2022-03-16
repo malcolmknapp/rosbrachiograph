@@ -48,41 +48,41 @@ shoulder_min = 100  # in degrees from x to y angles are accepted positions
 sholder_max = 400
 elbow_min = 100
 elbow_max = 500
-pen_max = 150
-pen_min = 300
+pen_max = 110
+pen_min = 500
 state = "idle"
 event = "none"
 shoulder_angle = -90
 elbow_angle = 90
 
 
-""" #calibration
+#calibration
 servo_1_angle_pws1 = [
-    [-162,100],
-    [-144,140],
-    [-126,180],
-    [-108,220],
-    [-90,260],
-    [-72,300],
-    [-54,340],
-    [-36,380],
-    [-18,420],
-    [0,460],
-    [18,500],
+    [-216,488],
+    [-198,447],
+    [-180,408],
+    [-162,369],
+    [-144,332],
+    [-126,298],
+    [-108,272],
+    [-90,235],
+    [-72,197],
+    [-54,165],
+    [-36,130],
 ]
 servo_2_angle_pws2 = [
-    [0,100],
-    [18,140],
-    [36,180],
-    [54,220],
-    [72,260],
-    [90,300],
-    [108,340],
-    [126,380],
-    [144,420],
-    [162,460],
-    [180,500],
-] """
+    [0,472],
+    [18,438],
+    [36,400],
+    [54,358],
+    [72,320],
+    [90,280],
+    [108,242],
+    [126,202],
+    [144,170],
+    [162,135],
+    [180,100],
+]
 
 # helper function
 # keeps the input number between a high and alow
@@ -125,7 +125,6 @@ def move_pen(move="up"):
     if move == "down":
         pen_msg.pen_pos = pen_current_pos = bg.pen.pw_down
         rospy.loginfo("Move pen down to {}".format (pen_current_pos))
-    
     jog_pen.publish(pen_msg)
     rospy.sleep(DELAY)
 
@@ -145,8 +144,8 @@ def jog_position(msg: Twist) -> None:
             new_y = bg.current_y - jog_size
         if msg.linear.x > 0:
             new_y = bg.current_y + jog_size
-    bg.xy(new_x, new_y) 
-    rospy.sleep(DELAY)
+        bg.xy(new_x, new_y) 
+        rospy.sleep(DELAY)
 
 def cmd_parse(msg:String) -> None:
     global state
@@ -250,10 +249,9 @@ if __name__ == "__main__":
         hysteresis_correction_1=0,  # hardware error compensation
         hysteresis_correction_2=0,
         wait=1,
-        pw_down=375,
-        pw_up=260,
-        
-    )
+        pw_down=110,
+        pw_up=350
+        )
 
     rate = rospy.Rate(10)
     print("Control is Running")

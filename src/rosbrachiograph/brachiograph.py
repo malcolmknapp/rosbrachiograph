@@ -42,7 +42,7 @@ class BrachioGraph:
 
         #ROS setup
         self.jog_servo = rospy.Publisher("jog_servo", ServoPosition, queue_size=1)
-        self.jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
+        
 
         # set the pantograph geometry
         self.INNER_ARM = inner_arm
@@ -186,7 +186,7 @@ class BrachioGraph:
     def draw(self, x=0, y=0, wait=0, interpolate=10):
 
         wait = wait or self.wait
-
+        #rospy.loginfo("drawing")
         self.xy(x=x, y=y, wait=wait, interpolate=interpolate, draw=True)
 
     # ----------------- line-processing methods -----------------
@@ -313,7 +313,7 @@ class BrachioGraph:
                 #rospy.loginfo("test pattern - draw 2")
                 self.draw(bounds[0], y + 1, wait, interpolate)
                 
-        rospy.loginfo("test pattern - park")
+        #rospy.loginfo("test pattern - park")
         self.park()
 
 
@@ -420,14 +420,16 @@ class BrachioGraph:
         wait = wait or self.wait
 
         if draw:
+            #rospy.loginfo("lowering pen")
             self.pen.down()
         else:
+            #rospy.loginfo("raising pen")
             self.pen.up()
-        rospy.loginfo("target coordinates: x {}, y {}".format (round (x,3),round (y,3)))
+        #rospy.loginfo("coord,x,{},y,{}".format (round (x,3),round (y,3)))
         (angle_1, angle_2) = self.xy_to_angles(x, y)
-        rospy.loginfo("target angles: shoulder {}, elbow {}".format (round (angle_1,3),round (angle_2,3)))
+        #rospy.loginfo("vertex angles,s,{},e,{}".format (round (angle_1,3),round (angle_2,3)))
         (pulse_width_1, pulse_width_2) = self.angles_to_pulse_widths(angle_1, angle_2)
-        rospy.loginfo("target pulse widths: shoulder {}, elbow {}".format (round (pulse_width_1,3),round (pulse_width_2,3)))
+        #rospy.loginfo("vertext pw,s,{},e,{}".format (round (pulse_width_1,3),round (pulse_width_2,3)))
         
         # if they are the same, we don't need to move anything
         """if (pulse_width_1, pulse_width_2) == self.get_pulse_widths():
@@ -444,7 +446,7 @@ class BrachioGraph:
         # calculate how many steps we need for this move, and the x/y length of each
         (x_length, y_length) = (x - self.current_x, y - self.current_y)
         length = math.sqrt(x_length ** 2 + y_length **2)
-        rospy.loginfo("Line length: {} \n".format(length))
+        #rospy.loginfo("Line length: {} \n".format(length))
         no_of_steps = int(length * interpolate) or 1
         #rospy.loginfo("Number of steps: {} \n".format(no_of_steps))
         if no_of_steps < 100:
@@ -458,9 +460,9 @@ class BrachioGraph:
 
             self.current_x = self.current_x + length_of_step_x
             self.current_y = self.current_y + length_of_step_y
-            #rospy.loginfo("next coordinates: x {}, y {}".format (round (self.current_x, 3),round (self.current_y, 3)))
+            rospy.loginfo("coord,x,{},y,{}".format (round (self.current_x, 3),round (self.current_y, 3)))
             angle_1, angle_2 = self.xy_to_angles(self.current_x, self.current_y)
-            #rospy.loginfo("next angle: shoulder {}, elbow {}".format (round (angle_1, 3),round (angle_2, 3)))
+            rospy.loginfo("angle,s,{},e,{}".format (round (angle_1, 3),round (angle_2, 3)))
             self.set_angles(angle_1, angle_2)
 
             if step + 1 < no_of_steps:
@@ -525,8 +527,7 @@ class BrachioGraph:
     #  ----------------- hardware-related methods -----------------
      
     def set_pulse_widths(self, pw_1, pw_2):
-        #rospy.loginfo("set shoulder pulse: {}".format (pw_1))
-        #rospy.loginfo("set elbow pulse: {}".format (pw_2))
+        rospy.loginfo("pw,s,{},e,{}".format (round (pw_1, 3),round (pw_2, 3)))
         jog_msg = ServoPosition()
         jog_msg.shoulder_pos = math.floor(pw_1)
         jog_msg.elbow_pos = math.floor(pw_2)
@@ -874,6 +875,8 @@ class Pen:
         self.pw_up = pw_up
         self.pw_down = pw_down
         self.transition_time = transition_time
+        self.jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
+
 
         self.up()
         sleep(0.3)
@@ -884,18 +887,20 @@ class Pen:
 
 
     def down(self):
-        return self.pw_down
+        pen_msg.pen_pos = self.pw_down
+        self.jog_pen.publish(pen_msg) 
         sleep(self.transition_time)
 
 
     def up(self):
-        return self.pw_up
+        pen_msg.pen_pos = self.pw_up
+        self.jog_pen.publish(pen_msg) 
         sleep(self.transition_time)
 
             
     # for convenience, a quick way to set pen motor pulse-widths
     def pw(self, pulse_width):
-            rospy.loginfo("Current positions %s", jog_msg) 
+            rospy.loginfo("Current positions %s", pen_msg) 
             self.jog_pen.publish(pen_msg)    
             
 
