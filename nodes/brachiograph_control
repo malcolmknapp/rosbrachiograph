@@ -34,8 +34,8 @@ global pen_servo_position
 
 #current positins
 pen_current_pos = 245
-elbow_current_pos = 245
-shoulder_current_pos = 312
+elbow_current_pw = 345
+shoulder_current_pw = 310
 
 # standard delay between moving the joints
 DELAY = 1.0
@@ -58,30 +58,28 @@ elbow_angle = 90
 
 #calibration
 servo_1_angle_pws1 = [
-    [-216,488],
-    [-198,447],
-    [-180,408],
-    [-162,369],
-    [-144,332],
-    [-126,298],
-    [-108,272],
-    [-90,235],
-    [-72,197],
-    [-54,165],
-    [-36,130],
+    [90 ,122],
+    [72 ,152],
+    [54 ,196],
+    [36 ,236],
+    [18 ,272],
+    [0 ,310],
+    [-18 ,340],
+    [-36 ,380],
+    [-54 ,420],
+    [-72 ,460],
+    [-90 ,506],
 ]
 servo_2_angle_pws2 = [
-    [0,472],
-    [18,438],
-    [36,400],
-    [54,358],
-    [72,320],
-    [90,280],
-    [108,242],
-    [126,202],
-    [144,170],
-    [162,135],
-    [180,100],
+    [0, 181],
+    [18, 221],
+    [36, 261],
+    [54, 301],
+    [72, 345],
+    [90, 387],
+    [108, 421 ],
+    [126, 463],
+    [144, 507],
 ]
 
 # helper function
@@ -95,16 +93,16 @@ def constrain(input: float, low: float, high: float) -> float:
     return max(min(input, high), low)
 
 def homing():
-    shoulder_home_pos = 225
-    elbow_home_pos = 300
+    shoulder_home_pos = 505
+    elbow_home_pos = 383
     pen_home_pos = 300
 
-    global shoulder_current_pos 
-    global elbow_current_pos
+    global shoulder_current_pw 
+    global elbow_current_pw
     global pen_current_pos
 
-    shoulder_current_pos = shoulder_home_pos
-    elbow_current_pos = elbow_home_pos
+    shoulder_current_pw = shoulder_home_pos
+    elbow_current_pw = elbow_home_pos
     pen_current_pos = pen_home_pos
 
     jog_msg.shoulder_pos = shoulder_home_pos
@@ -132,45 +130,58 @@ def move_pen(move="up"):
 def jog_position(msg: Twist) -> None:
     #rospy.loginfo("current x,y:  {},{}".format (round (bg.current_x,3) ,round (bg.current_y,3)))
     jog_size_xy = .5
+    jog_size_xy_fine = .1
     jog_size_pw = 10
+    jog_size_pw_fine = 2
+    jog_size = 0
     new_x = -8
     new_y = 4.2
+    global shoulder_current_pw
+    global elbow_current_pw
 
-    if state == "jog_xy":
+    if state == "jog_xy" or state == "jog_xy_fine":
+        if state == "jog_xy":
+            jog_size = jog_size_xy
+        else: 
+            jog_size = jog_size_xy_fine
         if msg.angular.z < 0:
-            new_x = bg.current_x - jog_size_xy
+            new_x = bg.current_x - jog_size
         if msg.angular.z > 0: 
-            new_x = bg.current_x + jog_size_xy
+            new_x = bg.current_x + jog_size
         if msg.linear.x < 0:
-            new_y = bg.current_y - jog_size_xy
+            new_y = bg.current_y - jog_size
         if msg.linear.x > 0:
-            new_y = bg.current_y + jog_size_xy
+            new_y = bg.current_y + jog_size
         bg.xy(new_x, new_y) 
         rospy.sleep(DELAY)
 
-    if state == "jog_pw":
-        global shoulder_current_pos
-        global elbow_current_pos
+    
+    if state == "jog_pw" or state == "jog_pw_fine":
+        if state == "jog_pw":
+            jog_size = jog_size_pw
+        else: 
+            jog_size = jog_size_pw_fine
+       
         #rospy.loginfo("state %s", state) 
-        rospy.loginfo("teleop msg:\n %s",msg)
+        #rospy.loginfo("teleop msg:\n %s",msg)
 
         if msg.angular.z < 0:
-            shoulder_current_pos = shoulder_current_pos - jog_size_pw
-            #rospy.loginfo("Shoulder -\r")
+            shoulder_current_pw = shoulder_current_pw - jog_size
         if msg.angular.z > 0:
-            shoulder_current_pos = shoulder_current_pos + jog_size_pw
-            #rospy.loginfo("Shoulder +\r")
-        if msg.linear.x < 0:
-            elbow_current_pos = elbow_current_pos - jog_size_pw
-            #rospy.loginfo("Elbow -")
+            shoulder_current_pw = shoulder_current_pw + jog_size
         if msg.linear.x > 0:
-            elbow_current_pos = elbow_current_pos + jog_size_pw
-            #rospy.loginfo("Elbow +")
+            elbow_current_pw = elbow_current_pw - jog_size
+        if msg.linear.x < 0:
+            elbow_current_pw = elbow_current_pw + jog_size
         
-        jog_msg.shoulder_pos = shoulder_current_pos
-        jog_msg.elbow_pos = elbow_current_pos
+        jog_msg.shoulder_pos = shoulder_current_pw
+        jog_msg.elbow_pos = elbow_current_pw
 
-        rospy.loginfo("Current servo positions %s", jog_msg)
+        shoulder_angle, elbow_angle = bg.pulse_widths_to_angles(shoulder_current_pw,elbow_current_pw)
+        test_pw_1, test_pw_2  = bg.angles_to_pulse_widths(shoulder_angle, elbow_angle)
+
+        rospy.loginfo("pw,s,{},e,{}".format (shoulder_current_pw,elbow_current_pw))
+        rospy.loginfo("angle,s,{},e,{}".format (round (shoulder_angle,0),round (elbow_angle,0)))
         jog_servo.publish(jog_msg)
         rospy.sleep(DELAY)
 
@@ -185,6 +196,12 @@ def cmd_parse(msg:String) -> None:
     rospy.loginfo("parsing command")
     parser = argparse.ArgumentParser (description = "ros brachiograph cli")
     parser.add_argument("cmd")
+
+    #jog commands 
+    parser.add_argument("--xy", action="store_true")
+    parser.add_argument("--xy_fine", action="store_true")
+    parser.add_argument("--pw", action="store_true")
+    parser.add_argument("--pw_fine", action="store_true")
 
     #pen command
     parser.add_argument("-u", "--up", action="store_true")
@@ -214,21 +231,22 @@ def cmd_parse(msg:String) -> None:
             event = "down"
             rospy.loginfo("pen down")
 
-    if args.cmd == "jog_xy":
-        state = "jog_xy"
-        if args.done:
-            state = "idle"
-            rospy.loginfo("done jogging")
-        else:
+    if args.cmd == "jog":
+        if args.xy:
+            state = "jog_xy"
             rospy.loginfo(" Now jogging xy")
-    if args.cmd == "jog_pw":
-        state = "jog_pw"
+        if args.xy_fine:
+            state = "jog_xy_fine"
+            rospy.loginfo(" Now jogging xy fine")
+        if args.pw:
+            state = "jog_pw"
+            rospy.loginfo(" Now jogging pw")
+        if args.pw_fine:
+            state = "jog_pw_fine"
+            rospy.loginfo(" Now jogging pw fine")
         if args.done:
             state = "idle"
             rospy.loginfo("done jogging")
-        else:
-            rospy.loginfo(" Now jogging pw")
-
     if args.cmd == "test":
         if args.line:
             state = "line"
@@ -263,21 +281,21 @@ if __name__ == "__main__":
     jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
     sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
     sub = rospy.Subscriber("/cli", String, cmd_parse)
-    test_bounds = [-8, 7, -4, 1]
+    test_bounds = [-10.4, 10, -3, 5]
     bg = BrachioGraph(
         # the lengths of the arms
         inner_arm=8,
-        outer_arm=4.2,
-        servo_1_centre=245,        # shoulder motor centre pulse-width
-        servo_2_centre=320,        # elbow motor centre pulse-width
+        outer_arm=6.5,
+        servo_1_centre=310,        # shoulder motor centre pulse-width
+        servo_2_centre=345,        # elbow motor centre pulse-width
         # the drawing area
         bounds=test_bounds,
         # angles in degrees and corresponding pulse-widths for the two arm servos
-        #servo_1_angle_pws=servo_1_angle_pws1,
-        #servo_2_angle_pws=servo_2_angle_pws2,
-        servo_1_degree_ms=-2,      # shoulder servo conversion. milliseconds pulse-width per degree
-        servo_2_degree_ms=2,       # elbow servo conversion. Reversed to compensate for mounting. milliseconds pulse-width per degree
-        arm_1_centre=-90,
+        servo_1_angle_pws=servo_1_angle_pws1,
+        servo_2_angle_pws=servo_2_angle_pws2,
+        servo_1_degree_ms=-1.08,      # shoulder servo conversion. milliseconds pulse-width per degree
+        servo_2_degree_ms=1,       # elbow servo conversion. Reversed to compensate for mounting. milliseconds pulse-width per degree
+        arm_1_centre=90,
         arm_2_centre=94,
         # pulse-widths for pen up/down
         hysteresis_correction_1=0,  # hardware error compensation

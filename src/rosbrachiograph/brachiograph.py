@@ -74,6 +74,15 @@ class BrachioGraph:
                     3
                 )
             )
+            rospy.loginfo("set angle to pw1 equation")
+            self.pw_1_to_angles = numpy.poly1d(
+                numpy.polyfit(
+                    servo_1_array[:,1],
+                    servo_1_array[:,0],
+                    3
+                )
+            )
+            rospy.loginfo("set pw1 to angle equation")
 
         else:
             self.angles_to_pw_1 = self.naive_angles_to_pulse_widths_1
@@ -84,6 +93,13 @@ class BrachioGraph:
                 numpy.polyfit(
                     servo_2_array[:,0],
                     servo_2_array[:,1],
+                    3
+                )
+            )
+            self.pw_2_to_angles = numpy.poly1d(
+                numpy.polyfit(
+                    servo_2_array[:,1],
+                    servo_2_array[:,0],
                     3
                 )
             )
@@ -505,7 +521,7 @@ class BrachioGraph:
 
     def naive_angles_to_pulse_widths_1(self, angle):
         #rospy.loginfo("covert shoulder angle: {}".format (angle))
-        #rospy.loginfo("to shoulder pulse: {}".format ((angle - self.arm_1_centre) * self.servo_1_degree_ms + self.servo_1_centre))
+        #rospy.loginfo("full equation: {}".format ((angle - self.arm_1_centre) * self.servo_1_degree_ms + self.servo_1_centre))
         return (angle - self.arm_1_centre) * self.servo_1_degree_ms + self.servo_1_centre
 
     def naive_angles_to_pulse_widths_2(self, angle):
@@ -523,6 +539,15 @@ class BrachioGraph:
 
         return (pulse_width_1, pulse_width_2)
 
+    def pulse_widths_to_angles(self, pw_1, pw_2):
+        # Given a pair of pulse widths, returns the appropriate angles.
+
+        # at present we assume only one method of calculating, using the pw_1_to_angles and pw_2_to_angles
+        # functions created using numpy
+
+        angle_1, angle_2 = self.pw_1_to_angles(pw_1), self.pw_2_to_angles(pw_2)
+
+        return (angle_1, angle_2)
 
     #  ----------------- hardware-related methods -----------------
      
