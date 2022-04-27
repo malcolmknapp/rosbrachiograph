@@ -148,9 +148,9 @@ def jog_position(msg: Twist) -> None:
             new_x = bg.current_x - jog_size
         if msg.angular.z > 0: 
             new_x = bg.current_x + jog_size
-        if msg.linear.x < 0:
-            new_y = bg.current_y - jog_size
         if msg.linear.x > 0:
+            new_y = bg.current_y - jog_size
+        if msg.linear.x < 0:
             new_y = bg.current_y + jog_size
         bg.xy(new_x, new_y) 
         rospy.sleep(DELAY)
@@ -311,13 +311,12 @@ if __name__ == "__main__":
         if state == "homing" :
             bg.park ()
             state = "idle"
-        if state == "idle":
-            if event == "up":
-                move_pen ("up")
-                event = "none"
-            if event == "down":
-                move_pen ("down") 
-                event = "none"
+        if event == "up":
+            move_pen ("up")
+            event = "none"
+        if event == "down":
+            move_pen ("down") 
+            event = "none"
         if state == "angle" :
             bg.set_angles(angle_1=shoulder_angle, angle_2=elbow_angle)
             state = "idle"          
