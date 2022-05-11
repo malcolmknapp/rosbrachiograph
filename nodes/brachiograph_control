@@ -37,24 +37,6 @@ pen_current_pos = 245
 elbow_current_pw = 345
 shoulder_current_pw = 310
 
-# standard delay between moving the joints
-DELAY = 1.0
-# setting up interger variables
-#     the arduino only accepts integers
-jog_msg = ServoPosition ()
-pen_msg = PenPosition ()
-
-shoulder_min = 100  # in degrees from x to y angles are accepted positions
-sholder_max = 400
-elbow_min = 100
-elbow_max = 500
-pen_max = 110
-pen_min = 500
-state = "idle"
-event = "none"
-shoulder_angle = -90
-elbow_angle = 90
-
 
 #calibration
 servo_1_angle_pws1 = [
@@ -82,6 +64,25 @@ servo_2_angle_pws2 = [
     [144, 507],
 ]
 
+# standard delay between moving the joints
+DELAY = 1.0
+# setting up interger variables
+#     the arduino only accepts integers
+jog_msg = ServoPosition ()
+pen_msg = PenPosition ()
+
+
+shoulder_min = 100  # in degrees from x to y angles are accepted positions
+sholder_max = 400
+elbow_min = 100
+elbow_max = 500
+pen_max = 110
+pen_min = 500
+state = "idle"
+event = "none"
+shoulder_angle = -90
+elbow_angle = 90
+
 # helper function
 # keeps the input number between a high and alow
 def constrain(input: float, low: float, high: float) -> float:
@@ -92,27 +93,6 @@ def constrain(input: float, low: float, high: float) -> float:
     """
     return max(min(input, high), low)
 
-def homing():
-    shoulder_home_pos = 505
-    elbow_home_pos = 383
-    pen_home_pos = 300
-
-    global shoulder_current_pw 
-    global elbow_current_pw
-    global pen_current_pos
-
-    shoulder_current_pw = shoulder_home_pos
-    elbow_current_pw = elbow_home_pos
-    pen_current_pos = pen_home_pos
-
-    jog_msg.shoulder_pos = shoulder_home_pos
-    jog_msg.elbow_pos = elbow_home_pos
-    pen_msg.pen_pos = pen_home_pos
-    rospy.loginfo("Home positions %s", jog_msg)
-    rospy.loginfo("Home position %s", pen_msg)
-    jog_servo.publish(jog_msg)
-    jog_pen.publish(pen_msg)
-    rospy.sleep(DELAY)
 
 def move_pen(move="up"):
     global pen_current_pos
@@ -129,15 +109,16 @@ def move_pen(move="up"):
 #jog the brachiograph manually
 def jog_position(msg: Twist) -> None:
     #rospy.loginfo("current x,y:  {},{}".format (round (bg.current_x,3) ,round (bg.current_y,3)))
+    global bg
     jog_size_xy = .5
     jog_size_xy_fine = .1
     jog_size_pw = 10
     jog_size_pw_fine = 2
     jog_size = 0
-    new_x = -8
-    new_y = 4.2
-    global shoulder_current_pw
-    global elbow_current_pw
+    new_x = bg.current_x
+    new_y = bg.current_y
+    shoulder_current_pw = bg.current_shoulder_pw
+    elbow_current_pw = bg.current_elbow_pw
 
     if state == "jog_xy" or state == "jog_xy_fine":
         if state == "jog_xy":
@@ -166,21 +147,21 @@ def jog_position(msg: Twist) -> None:
         #rospy.loginfo("teleop msg:\n %s",msg)
 
         if msg.angular.z < 0:
-            shoulder_current_pw = shoulder_current_pw - jog_size
+            bg.current_shoulder_pw = bg.current_shoulder_pw - jog_size
         if msg.angular.z > 0:
-            shoulder_current_pw = shoulder_current_pw + jog_size
+            bg.current_shoulder_pw = bg.current_shoulder_pw + jog_size
         if msg.linear.x > 0:
-            elbow_current_pw = elbow_current_pw - jog_size
+            bg.current_elbow_pw = bg.current_elbow_pw - jog_size
         if msg.linear.x < 0:
-            elbow_current_pw = elbow_current_pw + jog_size
+            bg.current_elbow_pw = bg.current_elbow_pw + jog_size
         
-        jog_msg.shoulder_pos = shoulder_current_pw
-        jog_msg.elbow_pos = elbow_current_pw
+        jog_msg.shoulder_pos = bg.current_shoulder_pw
+        jog_msg.elbow_pos = bg.current_elbow_pw
 
-        shoulder_angle, elbow_angle = bg.pulse_widths_to_angles(shoulder_current_pw,elbow_current_pw)
+        shoulder_angle, elbow_angle = bg.pulse_widths_to_angles(bg.current_shoulder_pw,bg.current_elbow_pw)
         test_pw_1, test_pw_2  = bg.angles_to_pulse_widths(shoulder_angle, elbow_angle)
 
-        rospy.loginfo("pw,s,{},e,{}".format (shoulder_current_pw,elbow_current_pw))
+        rospy.loginfo("pw,s,{},e,{}".format (bg.current_shoulder_pw,bg.current_elbow_pw))
         rospy.loginfo("angle,s,{},e,{}".format (round (shoulder_angle,0),round (elbow_angle,0)))
         jog_servo.publish(jog_msg)
         rospy.sleep(DELAY)
@@ -251,12 +232,11 @@ def cmd_parse(msg:String) -> None:
         if args.line:
             state = "line"
             rospy.loginfo("testing line")
-    if args.cmd == "test":
         if args.angle:
             state = "angle"
             shoulder_angle = args.angle[0]
             elbow_angle = args.angle[1]
-            rospy.loginfo("test go to angle: shoulder {}, elblow {}".format (shoulder_angle,elbow_angle))
+            rospy.loginfo("test go to angle: shoulder {}, elbow {}".format (shoulder_angle,elbow_angle))
         if args.box:
             state = "box"
             rospy.loginfo("test drawing a box")
@@ -273,14 +253,6 @@ def cmd_parse(msg:String) -> None:
             rospy.loginfo("drawing a test pattern")
             
 if __name__ == "__main__":
-    rospy.init_node("brachiograph_control_node")
-
-    # setup topics to control into arduino servo angles
-    # publishing a integer between pulse width 50 - 400 
-    jog_servo = rospy.Publisher("jog_servo", ServoPosition, queue_size=1)
-    jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
-    sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
-    sub = rospy.Subscriber("/cli", String, cmd_parse)
     test_bounds = [-10.4, 10, -3, 5]
     bg = BrachioGraph(
         # the lengths of the arms
@@ -304,6 +276,15 @@ if __name__ == "__main__":
         pw_down=110,
         pw_up=350
         )
+    rospy.init_node("brachiograph_control_node")
+    bg.ROSinit()
+
+    # setup topics to control into arduino servo angles
+    # publishing a integer between pulse width 50 - 400 
+    jog_servo = rospy.Publisher("jog_servo", ServoPosition, queue_size=1)
+    jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
+    sub = rospy.Subscriber("/cmd_vel", Twist, jog_position)
+    sub = rospy.Subscriber("/cli", String, cmd_parse)
 
     rate = rospy.Rate(10)
     print("Control is Running")

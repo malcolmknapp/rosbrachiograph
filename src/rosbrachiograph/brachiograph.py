@@ -37,11 +37,12 @@ class BrachioGraph:
         wait=None,
         pw_up=1500,                 # pulse-widths for pen up/down
         pw_down=1100,
-        
+        current_shoulder_pw = 505,  # current shoulder pulse width
+        current_elbow_pw = 383,    # current elbow pulse width
     ):
 
         #ROS setup
-        self.jog_servo = rospy.Publisher("jog_servo", ServoPosition, queue_size=1)
+        #self.jog_servo
         
 
         # set the pantograph geometry
@@ -121,11 +122,19 @@ class BrachioGraph:
         # Set the x and y position state, so it knows its current x/y position.
         self.current_x = -self.INNER_ARM
         self.current_y = self.OUTER_ARM
+        self.current_shoulder_pw = current_shoulder_pw
+        self.current_elbow_pw = current_elbow_pw
 
         self.reset_report()
 
         self.previous_pw_1 = self.previous_pw_2 = 0
         self.active_hysteresis_correction_1 = self.active_hysteresis_correction_2 = 0
+
+    def ROSinit (self):
+        self.jog_servo = rospy.Publisher("jog_servo", ServoPosition, queue_size=1)
+        self.pen.ROSinit()
+
+
 
     # methods in this class:
     # drawing
@@ -553,6 +562,8 @@ class BrachioGraph:
      
     def set_pulse_widths(self, pw_1, pw_2):
         rospy.loginfo("pw,s,{},e,{}".format (round (pw_1, 3),round (pw_2, 3)))
+        self.current_shoulder_pw = math.floor(pw_1)
+        self.current_elbow_pw = math.floor(pw_2)
         jog_msg = ServoPosition()
         jog_msg.shoulder_pos = math.floor(pw_1)
         jog_msg.elbow_pos = math.floor(pw_2)
@@ -561,8 +572,8 @@ class BrachioGraph:
 
     def get_pulse_widths(self):
 
-        actual_pulse_width_1 = self.rpi.get_servo_pulsewidth(14)
-        actual_pulse_width_2 = self.rpi.get_servo_pulsewidth(15)
+        actual_pulse_width_1 = self.current_shoulder_pw
+        actual_pulse_width_2 = self.current_elbow_pw
 
         return (actual_pulse_width_1, actual_pulse_width_2)
 
@@ -572,6 +583,8 @@ class BrachioGraph:
 
         self.pen.up()
         self.xy(-self.INNER_ARM, self.OUTER_ARM)
+        rospy.loginfo("current shoulder pw: {}".format (self.current_shoulder_pw))
+        rospy.loginfo("current elbow pw: {}".format (self.current_elbow_pw))
         sleep(1)
         # self.quiet()
 
@@ -894,21 +907,24 @@ class BrachioGraph:
 class Pen:
 
     def __init__(self, bg, pw_up=1700, pw_down=1300, pin=18, transition_time=0.25, virtual_mode=False):
-
         self.bg = bg
         self.pin = pin
         self.pw_up = pw_up
         self.pw_down = pw_down
         self.transition_time = transition_time
+       # self.jog_pen
+
+
+
+    def ROSinit (self):
         self.jog_pen = rospy.Publisher("jog_pen", PenPosition, queue_size=1)
-
-
         self.up()
         sleep(0.3)
         self.down()
         sleep(0.3)
         self.up()
         sleep(0.3)
+
 
 
     def down(self):
