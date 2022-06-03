@@ -204,6 +204,10 @@ def cmd_parse(msg:String) -> None:
         state = "homing"
         rospy.loginfo("homing brachiograph")
 
+    if args.cmd == "plot":
+        state = "plotting"
+        rospy.loginfo("plotting file")
+
     if args.cmd == "pen":
         if args.up:
             event = "up"
@@ -291,6 +295,9 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         if state == "homing" :
             bg.park ()
+            state = "idle"
+        if state == "plotting":
+            bg.plot_file(filename = "/home/ubuntu/catkin_ws/src/rosbrachiograph/images/africa.json")
             state = "idle"
         if event == "up":
             move_pen ("up")

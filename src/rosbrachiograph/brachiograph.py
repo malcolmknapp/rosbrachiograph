@@ -221,6 +221,12 @@ class BrachioGraph:
         rotate, x_mid_point, y_mid_point, box_x_mid_point, box_y_mid_point, divider = self.analyse_lines(
             lines=lines, rotate=rotate, bounds=bounds
         )
+        rospy.loginfo("rotate: {}".format (rotate))
+        rospy.loginfo("x_mid_point: {}".format (x_mid_point))
+        rospy.loginfo("y_mid_point: {}".format (y_mid_point))
+        rospy.loginfo("box_x_mid_point: {}".format (box_x_mid_point))
+        rospy.loginfo("box_y_mid_point: {}".format (box_y_mid_point))
+        rospy.loginfo("divider: {}".format (divider))
 
         for line in lines:
 
@@ -286,16 +292,27 @@ class BrachioGraph:
 
         min_x, max_x = min(x_values_in_lines), max(x_values_in_lines)
         min_y, max_y = min(y_values_in_lines), max(y_values_in_lines)
-
+        rospy.loginfo("min_x: {}".format (min_x))
+        rospy.loginfo("max_x: {}".format (max_x))
+        rospy.loginfo("min_y: {}".format (min_y))
+        rospy.loginfo("max_y: {}".format (max_y))
         # Identify the range they span.
 
         x_range, y_range = max_x - min_x, max_y - min_y
         box_x_range, box_y_range = bounds[2] - bounds[0], bounds[3] - bounds[1]
-
+        rospy.loginfo("x_range: {}".format (x_range))
+        rospy.loginfo("y_range: {}".format (y_range))
+        rospy.loginfo("box_x_range: {}".format (box_x_range))
+        rospy.loginfo("box_y_range: {}".format (box_y_range))
         # And their mid-points.
 
         x_mid_point, y_mid_point = (max_x + min_x) / 2, (max_y + min_y) / 2
         box_x_mid_point, box_y_mid_point = (bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2
+        rospy.loginfo("x_mid_point: {}".format (x_mid_point))
+        rospy.loginfo("y_mid_point: {}".format (y_mid_point))
+        rospy.loginfo("box_x_mid_point: {}".format (box_x_mid_point))
+        rospy.loginfo("box_y_mid_point: {}".format (box_y_mid_point))
+        
 
         # Get a 'divider' value for each range - the value by which we must divide all x and y so that they will
         # fit safely inside the drawing range of the plotter.
@@ -305,11 +322,13 @@ class BrachioGraph:
         if (x_range >= y_range and box_x_range >= box_y_range) or (x_range <= y_range and box_x_range <= box_y_range):
 
             divider = max((x_range / box_x_range), (y_range / box_y_range))
+            rospy.loginfo("divider: {}".format (divider))
             rotate = False
 
         else:
-
+            rospy.loginfo("rotate")
             divider = max((x_range / box_y_range), (y_range / box_x_range))
+            rospy.loginfo("divider: {}".format (divider))
             rotate = True
             x_mid_point, y_mid_point = y_mid_point, x_mid_point
 
@@ -485,9 +504,9 @@ class BrachioGraph:
 
             self.current_x = self.current_x + length_of_step_x
             self.current_y = self.current_y + length_of_step_y
-            rospy.loginfo("coord,x,{},y,{}".format (round (self.current_x, 3),round (self.current_y, 3)))
+            #rospy.loginfo("coord,x,{},y,{}".format (round (self.current_x, 3),round (self.current_y, 3)))
             angle_1, angle_2 = self.xy_to_angles(self.current_x, self.current_y)
-            rospy.loginfo("angle,s,{},e,{}".format (round (angle_1, 3),round (angle_2, 3)))
+            #rospy.loginfo("angle,s,{},e,{}".format (round (angle_1, 3),round (angle_2, 3)))
             self.set_angles(angle_1, angle_2)
 
             if step + 1 < no_of_steps:
@@ -561,7 +580,7 @@ class BrachioGraph:
     #  ----------------- hardware-related methods -----------------
      
     def set_pulse_widths(self, pw_1, pw_2):
-        rospy.loginfo("pw,s,{},e,{}".format (round (pw_1, 3),round (pw_2, 3)))
+        #rospy.loginfo("pw,s,{},e,{}".format (round (pw_1, 3),round (pw_2, 3)))
         self.current_shoulder_pw = math.floor(pw_1)
         self.current_elbow_pw = math.floor(pw_2)
         jog_msg = ServoPosition()
